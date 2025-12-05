@@ -830,14 +830,20 @@ const handlePublish = async () => {
               setImages([]);
               setUploadedImageUrls([]);
               setIsTargetedMode(false);
+
+              // 新增：返回到 index 界面
+              router.back();
             }
           }
         ]
       );
-    }
-  };
+    } else {
+      // 新增：如果没有输入内容，直接返回
+      router.back();
+    };
+  }
 
-  // 请求相册权限
+    // 请求相册权限
   const requestPermission = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
