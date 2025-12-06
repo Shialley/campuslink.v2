@@ -15,60 +15,8 @@ import {
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-// Filter图标组件 - 使用 emoji
-const FilterIcon = () => (
-  <Text style={{ fontSize: 20 }}>🔍</Text>
-);
-
-// 点赞图标
-const LikeIcon = ({ filled = false }: { filled?: boolean }) => (
-  <Image
-    source={filled ? require('@/assets/images/sumup.png') : require('@/assets/images/nosumup.png')}
-    style={styles.iconImage}
-  />
-);
-
-// 收藏图标
-const BookmarkIcon = ({ filled = false }: { filled?: boolean }) => (
-  <Image
-    source={filled ? require('@/assets/images/save.png') : require('@/assets/images/nosave.png')}
-    style={styles.iconImage}
-  />
-);
-
-// 评论图标
-const CommentIcon = () => (
-  <Image
-    source={require('@/assets/images/comment.png')}
-    style={styles.iconImage}
-  />
-);
-
 // 新增：SendButton 组件
-function PaperPlaneFallback({ size = 28 }: { size?: number }) {
-  const wingStyle = {
-    width: size * 0.9,
-    height: size * 0.22,
-    borderRadius: 2,
-    backgroundColor: '#2B2F36',
-  };
-
-  const bodyStyle = {
-    width: size * 0.5,
-    height: size * 0.22,
-    borderRadius: 2,
-    backgroundColor: '#2B2F36',
-  };
-
-  return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <View style={[wingStyle, { transform: [{ rotate: '-20deg' }, { translateY: -2 }] }]} />
-      <View style={[bodyStyle, { position: 'absolute', transform: [{ rotate: '30deg' }] }]} />
-    </View>
-  );
-}
-
-function SendButton({ iconSource, size = 58 }: { iconSource?: any; size?: number }) {
+function SendButton({ size = 58 }: { size?: number }) {
   const inner = Math.round(size);
   const iconSize = Math.round(inner * 0.48);
   const outerPadding = 6;
@@ -92,33 +40,27 @@ function SendButton({ iconSource, size = 58 }: { iconSource?: any; size?: number
   );
 }
 
-// 帖子数据类型 - 添加 isRead 和 isTargeted 字段
+// 帖子数据类型
 interface Post {
   postid: string;
   title: string;
   content: string;
   cover_name: string;
   createtime: string;
-  like: number;
-  comments: number;
-  bookmarks: number;
   tags: string;
   image_url?: string;
-  isLiked?: boolean;
-  isBookmarked?: boolean;
-  isRead?: boolean; // 新增：是否已读
-  isTargeted?: boolean; // 新增：是否为 targeted post
-  readTime?: string; // 新增：期待阅读时长
-  energy?: number; // 新增：能量值
+  isRead?: boolean;
+  isTargeted: boolean;
+  readTime: string;
+  energy: number;
 }
 
 export default function Index() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchText, setSearchText] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'all' | 'unread' | 'read'>('all'); // 新增：当前选中的 tab
+  const [selectedTab, setSelectedTab] = useState<'all' | 'unread' | 'read'>('unread');
   const [userProfile] = useState({
     id: '1',
     username: '校园林克',
@@ -132,73 +74,56 @@ export default function Index() {
   const loadPosts = async () => {
     try {
       setLoading(true);
-      // 模拟数据加载 - 添加 targeted posts
+      // 只加载 targeted posts
       const mockPosts: Post[] = [
         {
           postid: '1',
           title: 'acct 101 pq sub 求组队',
           content: '如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如...',
           cover_name: 'Tomas',
-          createtime: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-          like: 10,
-          comments: 5,
-          bookmarks: 3,
+          createtime: '19:04',
           tags: 'ACCT101,Study',
-          isLiked: false,
-          isBookmarked: false,
-          isRead: false, // 未读
-          isTargeted: true, // 是 targeted post
+          isRead: false,
+          isTargeted: true,
           readTime: '30s',
           energy: 20,
+          image_url: 'https://storage.googleapis.com/tagjs-prod.appspot.com/v1/egC8MCMzoa/yulzzgwh_expires_30_days.png',
         },
         {
           postid: '2',
           title: '第九屆「任國榮先生生命科學講座',
           content: '主講：沈祖堯教授\n報名鏈接：https://aaa-bbb.ccc',
           cover_name: 'cuhk_sls',
-          createtime: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-          like: 45,
-          comments: 12,
-          bookmarks: 18,
+          createtime: '08:00',
           tags: 'CUHK,Lecture',
-          isLiked: false,
-          isBookmarked: false,
-          isRead: true, // 已读
+          isRead: true,
           isTargeted: true,
           readTime: '45s',
           energy: 15,
         },
         {
           postid: '3',
-          title: 'Welcome to CampusLink',
-          content: 'This is the main feed where you can see all posts from your campus community.',
-          cover_name: 'Admin',
-          createtime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          like: 100,
-          comments: 25,
-          bookmarks: 50,
-          tags: 'Welcome,Info',
-          isLiked: false,
-          isBookmarked: false,
-          isRead: false, // 未读
-          isTargeted: false, // 普通帖子
-        },
-        {
-          postid: '4',
           title: '2024-25社會企業起動計劃：接受報名',
           content: 'Social Enterprise Startup Scheme 2024-25: Open. The Social Enterprise Startup Scheme...',
           cover_name: 'cuhk_osa_seds',
-          createtime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          like: 30,
-          comments: 8,
-          bookmarks: 12,
+          createtime: '1 days ago',
           tags: 'CUHK,SocialEnterprise',
-          isLiked: false,
-          isBookmarked: false,
-          isRead: true, // 已读
+          isRead: false,
           isTargeted: true,
           readTime: '2m',
           energy: 25,
+        },
+        {
+          postid: '4',
+          title: 'Elite Internship Program 2025',
+          content: 'Program Period : Mid June - 31 August 2025',
+          cover_name: 'career_center',
+          createtime: '2025/04/07',
+          tags: 'Career,Internship',
+          isRead: true,
+          isTargeted: true,
+          readTime: '1m',
+          energy: 18,
         },
       ];
       setPosts(mockPosts);
@@ -216,25 +141,7 @@ export default function Index() {
     setRefreshing(false);
   };
 
-  const handleLike = (postId: string) => {
-    setPosts(posts.map(post => 
-      post.postid === postId 
-        ? { ...post, isLiked: !post.isLiked, like: post.isLiked ? post.like - 1 : post.like + 1 }
-        : post
-    ));
-  };
-
-  const handleBookmark = (postId: string) => {
-    setPosts(posts.map(post => 
-      post.postid === postId 
-        ? { ...post, isBookmarked: !post.isBookmarked, bookmarks: post.isBookmarked ? post.bookmarks - 1 : post.bookmarks + 1 }
-        : post
-    ));
-  };
-
-  // 新增：处理帖子点击 - 区分普通帖子和 targeted post
   const handlePostPress = (post: Post) => {
-    // 标记为已读
     setPosts(prevPosts => 
       prevPosts.map(p => 
         p.postid === post.postid 
@@ -243,22 +150,15 @@ export default function Index() {
       )
     );
 
-    if (post.isTargeted) {
-      // 跳转到 TargetedPostDetail
-      router.push({
-        pathname: '/TargetedPostDetail',
-        params: {
-          postId: post.postid,
-          expectedDuration: post.readTime || '30s',
-        },
-      });
-    } else {
-      // 跳转到普通 PostDetail
-      router.push(`/PostDetail?postid=${post.postid}`);
-    }
+    router.push({
+      pathname: '/TargetedPostDetail',
+      params: {
+        postId: post.postid,
+        expectedDuration: post.readTime,
+      },
+    });
   };
 
-  // 新增：根据 tab 过滤帖子
   const getFilteredPosts = () => {
     if (selectedTab === 'all') {
       return posts;
@@ -270,14 +170,16 @@ export default function Index() {
     return posts;
   };
 
-  // 新增：计算总能量
   const getTotalEnergy = () => {
     return posts
-      .filter(post => post.isTargeted && post.energy)
-      .reduce((total, post) => total + (post.energy || 0), 0);
+      .filter(post => !post.isRead)
+      .reduce((total, post) => total + post.energy, 0);
   };
 
-  // 新增：删除帖子
+  const getUnreadCount = () => {
+    return posts.filter(post => !post.isRead).length;
+  };
+
   const handleDeletePost = (item: Post) => {
     Alert.alert(
       '确认删除',
@@ -295,22 +197,10 @@ export default function Index() {
     );
   };
 
-  // 新增：收藏/取消收藏帖子
   const handleBookmarkPost = (item: Post) => {
-    setPosts(posts.map(post => 
-      post.postid === item.postid 
-        ? { 
-            ...post, 
-            isBookmarked: !post.isBookmarked, 
-            bookmarks: post.isBookmarked ? post.bookmarks - 1 : post.bookmarks + 1 
-          }
-        : post
-    ));
-    
-    // 显示提示
     Alert.alert(
       '成功',
-      item.isBookmarked ? '已取消收藏' : '已添加到收藏',
+      '已添加到收藏',
       [{ text: '确定' }]
     );
   };
@@ -322,80 +212,55 @@ export default function Index() {
       onBookmark={handleBookmarkPost}
     >
       <TouchableOpacity
-        style={styles.postCardContent}
+        style={styles.cardContainer}
         onPress={() => handlePostPress(item)}
         activeOpacity={0.9}
       >
-        <View style={styles.postHeader}>
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>{item.cover_name[0]}</Text>
+        {/* 卡片上部分：标题和内容 */}
+        <View style={{ marginBottom: 12 }}>
+          {/* 标题栏 */}
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle} numberOfLines={1}>
+              {item.title}
+            </Text>
+            <Text style={styles.cardTime}>{item.createtime}</Text>
           </View>
-          <View style={styles.postHeaderInfo}>
-            <Text style={styles.authorName}>{item.cover_name}</Text>
-            <Text style={styles.postTime}>{new Date(item.createtime).toLocaleDateString()}</Text>
+
+          {/* 内容主体 */}
+          <View style={styles.cardBody}>
+            <Text style={styles.cardContent} numberOfLines={3}>
+              {item.content}
+            </Text>
+            {item.image_url && (
+              <Image
+                source={{ uri: item.image_url }}
+                style={styles.cardImage}
+                resizeMode="cover"
+              />
+            )}
           </View>
-          {item.isTargeted && item.energy && (
-            <View style={styles.energyBadge}>
+        </View>
+
+        {/* 卡片下部分：用户信息与能量 */}
+        <View style={styles.cardFooter}>
+          <View style={styles.userInfo}>
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarText}>{item.cover_name[0]}</Text>
+            </View>
+            <Text style={styles.username}>{item.cover_name}</Text>
+          </View>
+
+          <View style={styles.actions}>
+            <Text style={styles.elapsedTime}>{item.readTime}</Text>
+            <View style={styles.pointsBtn}>
               <Image
                 source={require('@/assets/images/energy.png')}
-                style={styles.energyIcon}
+                style={styles.energyIconSmall}
               />
-              <Text style={styles.energyText}>{item.energy}</Text>
+              <Text style={styles.pointsText}>+{item.energy}</Text>
             </View>
-          )}
-        </View>
-
-        <Text style={styles.postTitle}>{item.title}</Text>
-        <Text style={styles.postContent} numberOfLines={3}>{item.content}</Text>
-
-        {item.image_url && (
-          <Image source={{ uri: item.image_url }} style={styles.postImage} />
-        )}
-
-        <View style={styles.postActions}>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              handleLike(item.postid);
-            }}
-          >
-            <LikeIcon filled={item.isLiked} />
-            <Text style={styles.actionText}>{item.like}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              handlePostPress(item);
-            }}
-          >
-            <CommentIcon />
-            <Text style={styles.actionText}>{item.comments}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              handleBookmark(item.postid);
-            }}
-          >
-            <BookmarkIcon filled={item.isBookmarked} />
-            <Text style={styles.actionText}>{item.bookmarks}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {item.tags && (
-          <View style={styles.tagsContainer}>
-            {item.tags.split(',').map((tag, index) => (
-              <View key={index} style={styles.tag}>
-                <Text style={styles.tagText}>#{tag}</Text>
-              </View>
-            ))}
           </View>
-        )}
+        </View>
       </TouchableOpacity>
     </SwipeableRow>
   );
@@ -403,7 +268,7 @@ export default function Index() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#FFC107" />
       </View>
     );
   }
@@ -430,17 +295,21 @@ export default function Index() {
             />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>CampusLink</Text>
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>主页</Text>
+            {getUnreadCount() > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{getUnreadCount()}</Text>
+              </View>
+            )}
+          </View>
           
-          <View style={styles.headerActions}>
-            {/* 总能量显示 */}
-            <View style={styles.totalEnergyContainer}>
-              <Image
-                source={require('@/assets/images/energy.png')}
-                style={styles.totalEnergyIcon}
-              />
-              <Text style={styles.totalEnergyText}>{getTotalEnergy()}</Text>
-            </View>
+          <View style={styles.totalEnergyContainer}>
+            <Image
+              source={require('@/assets/images/energy.png')}
+              style={styles.totalEnergyIcon}
+            />
+            <Text style={styles.totalEnergyText}>{getTotalEnergy()}</Text>
           </View>
         </View>
 
@@ -455,29 +324,38 @@ export default function Index() {
           contentContainerStyle={styles.listContent}
         />
 
-        {/* 左下角切换按钮 */}
-        <View style={styles.tabBar}>
-          {(['all', 'unread', 'read'] as const).map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tabButton, selectedTab === tab && styles.tabActive]}
-              onPress={() => setSelectedTab(tab)}
-            >
-              <Text style={[styles.tabText, selectedTab === tab && styles.tabTextActive]}>
-                {tab === 'all' ? '所有' : tab === 'unread' ? '未读' : '已读'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* 底部悬浮栏 */}
+        <View style={styles.bottomBar}>
+          {/* 左侧切换按钮 */}
+          <View style={styles.filterPill}>
+            {(['all', 'unread', 'read'] as const).map((tab) => (
+              <TouchableOpacity
+                key={tab}
+                style={[
+                  styles.filterItem,
+                  selectedTab === tab && styles.filterItemSelected
+                ]}
+                onPress={() => setSelectedTab(tab)}
+              >
+                <Text style={[
+                  styles.filterTextGray,
+                  selectedTab === tab && styles.filterTextSelected
+                ]}>
+                  {tab === 'all' ? '所有' : tab === 'unread' ? '未读' : '已读'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-        {/* 右下角发送按钮 */}
-        <TouchableOpacity 
-          style={styles.floatingPostButton}
-          onPress={() => router.push('/post')}
-          activeOpacity={0.8}
-        >
-          <SendButton size={58} />
-        </TouchableOpacity>
+          {/* 右侧发送按钮 */}
+          <TouchableOpacity 
+            style={styles.fabButton}
+            onPress={() => router.push('/post')}
+            activeOpacity={0.8}
+          >
+            <SendButton size={50} />
+          </TouchableOpacity>
+        </View>
       </View>
     </GestureHandlerRootView>
   );
@@ -486,13 +364,13 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -500,189 +378,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    paddingTop: 50,
+    paddingTop: 70,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  headerActions: {
+  headerTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    position: 'relative',
   },
-  // 新增：总能量容器样式
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  badge: {
+    backgroundColor: '#FFC107',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 8,
+    marginLeft: 4,
+    position: 'absolute',
+    top: -8,
+    right: -20,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#333',
+  },
   totalEnergyContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF7E6',
-    paddingHorizontal: 12,
+    backgroundColor: '#FFC107',
     paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#FFD700',
   },
   totalEnergyIcon: {
-    width: 18,
-    height: 18,
-    marginRight: 6,
+    width: 12,
+    height: 12,
+    marginRight: 2,
   },
   totalEnergyText: {
-    fontSize: 16,
     fontWeight: 'bold',
-    color: '#FF8C00',
-  },
-  iconButton: {
-    padding: 8,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginVertical: 15,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 10,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1E293B',
-  },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    paddingBottom: 100, // 为底部按钮留出空间
-  },
-  postCard: {
-    marginBottom: 15,
-  },
-  postCardContent: {
-    padding: 16,
-  },
-  postHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#4A90E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  postHeaderInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  authorName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
-  },
-  postTime: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  // 新增：energy 徽章样式
-  energyBadge: {
-    backgroundColor: '#FF8C00',
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    shadowColor: '#FF8C00',
-    shadowOpacity: 0.3,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  energyIcon: {
-    width: 14,
-    height: 14,
-    marginRight: 4,
-  },
-  energyText: {
-    color: '#1E293B',
-    fontSize: 13,
-    fontWeight: 'bold',
-  },
-  postTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 8,
-  },
-  postContent: {
     fontSize: 14,
-    color: '#475569',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  postImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  postActions: {
-    flexDirection: 'row',
-    gap: 20,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  iconImage: {
-    width: 20,
-    height: 20,
-  },
-  actionText: {
-    fontSize: 14,
-    color: '#64748B',
-    fontWeight: '500',
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
-  },
-  tag: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  tagText: {
-    fontSize: 12,
-    color: '#3B82F6',
-    fontWeight: '500',
+    color: '#333',
   },
   profileIconButton: {
     padding: 4,
@@ -691,68 +431,173 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
   },
-  floatingPostButton: {
-    position: 'absolute',
-    right: 20,
-    bottom: 110, // 从 90 调整到 110，与 tab bar 保持更好的间距
-    zIndex: 999,
-  },
-  // 新增：tab bar 样式
-  tabBar: {
-    position: 'absolute',
-    bottom: 20, // 从 0 调整到 20，往上移动 20px
-    left: 20, // 添加左边距
-    right: 20, // 添加右边距
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 12,
+  listContent: {
     paddingHorizontal: 20,
+    paddingVertical: 10,
+    paddingBottom: 100,
+  },
+  cardContainer: {
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    borderRadius: 25, // 添加圆角，使其更美观
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  tabButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    backgroundColor: '#F1F5F9',
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
   },
-  tabActive: {
-    backgroundColor: '#FFB800',
+  cardTitle: {
+    color: '#334155',
+    fontSize: 15,
+    fontWeight: 'bold',
+    flex: 1,
+    marginRight: 10,
   },
-  tabText: {
-    color: '#64748B',
+  cardTime: {
+    color: '#94A3B8',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  cardBody: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cardContent: {
+    color: '#475569',
+    fontSize: 14,
+    lineHeight: 20,
+    flex: 1,
+    marginRight: 10,
+  },
+  cardImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarPlaceholder: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#4A90E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  username: {
+    color: '#334155',
     fontSize: 14,
     fontWeight: '600',
   },
-  tabTextActive: {
-    color: '#1E293B',
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  elapsedTime: {
+    color: '#94A3B8',
+    fontSize: 12,
+    marginRight: 10,
+  },
+  pointsBtn: {
+    flexDirection: 'row',
+    backgroundColor: '#FFC107',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  energyIconSmall: {
+    width: 12,
+    height: 12,
+    marginRight: 2,
+  },
+  pointsText: {
+    color: '#333',
+    fontSize: 13,
     fontWeight: 'bold',
   },
-  // SendButton 组件样式
+  bottomBar: {
+    position: 'absolute',
+    bottom: 30,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  filterPill: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 25,
+    padding: 4,
+    alignItems: 'center',
+  },
+  filterItem: {
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  filterItemSelected: {
+    backgroundColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  filterTextGray: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  filterTextSelected: {
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  fabButton: {
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   shadowWrapper: {
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 10,
     elevation: 6,
   },
   outerWhite: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
   },
   gradientRing: {
     backgroundColor: '#FF9317',
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     position: 'relative',
   },
   gradientHighlight: {
@@ -766,8 +611,8 @@ const styles = StyleSheet.create({
     opacity: 0.95,
   },
   innerCircle: {
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

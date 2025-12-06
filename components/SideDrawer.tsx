@@ -139,7 +139,7 @@ export default function SideDrawer({ isOpen, onClose, userProfile }: SideDrawerP
               <View style={styles.menuItemLeft}>
                 <View style={styles.menuIconContainer}>
                   <Image
-                    source={require('@/assets/images/my_favorite.png')}
+                    source={require('@/assets/images/my_save.png')}
                     style={styles.menuIcon}
                   />
                 </View>
