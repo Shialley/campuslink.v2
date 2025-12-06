@@ -6,9 +6,7 @@ import { useCallback, useRef, useState } from 'react';
 import {
   Alert,
   Dimensions,
-  FlatList,
   Image,
-  KeyboardAvoidingView,
   Modal,
   Platform,
   SafeAreaView,
@@ -21,9 +19,9 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-// 导入API函数 - 修复：只从一个地方导入，避免重复
+// 导入API函数
 import { sendPost, uploadImage, type PostData } from '@/services/api';
-import { extractHashtags, stripHashtags } from '@/utils/tags';
+import { stripHashtags } from '@/utils/tags';
 
 // 图标组件
 const TagIcon = () => (
@@ -53,16 +51,24 @@ const ExpandIcon = () => (
   </Svg>
 );
 
-const ImageIcon = () => (
-  <Image
-    source={{uri: "https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/fb63fc82-2561-4765-8c59-cf7dc3fdeebd"}}
-    resizeMode="stretch"
-    style={{
-      width: 24,
-      height: 24,
-      marginRight: 3,
-    }}
-  />
+const BackIcon = () => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Path 
+      d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"
+      fill="#475569"
+    />
+  </Svg>
+);
+
+const FilterIcon = () => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Path 
+      d="M3 6h2m4 0h12M9 12H7m10 0H9m-2 6h4m4 0h4"
+      stroke="#64748B"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  </Svg>
 );
 
 const ArrowRightIcon = () => (
@@ -114,7 +120,6 @@ const DownArrowIcon = () => (
   </Svg>
 );
 
-// 添加CollapseIcon组件
 const CollapseIcon = () => (
   <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
     <Path 
@@ -127,117 +132,54 @@ const CollapseIcon = () => (
 // 语言文本
 const text = {
   EN: {
-    newPost: 'New Post',
+    targetedPost: 'Targeted Post',
     send: 'Send',
     cancel: 'Cancel',
-    title: 'Title (Optional)', // 修改：添加可选提示
+    title: 'Title',
     content: 'Content...',
     tags: 'Tags',
     user: 'User',
-    expand: 'Expand',
+    expand: 'Full Screen',
     collapse: 'Collapse',
-    switchToTargeted: 'Switch to a Targeted Message',
     publishSuccess: 'Post published successfully!',
     publishFailed: 'Failed to publish post',
-    titleRequired: 'Title is required', // 保留但不再使用
     contentRequired: 'Content is required',
     publishing: 'Publishing...',
-    uploadingImages: 'Uploading images...',
-    addImage: 'Add Image',
-    filters: 'Filters',
-    school: 'School',
-    schoolList: 'CUHK, HKU, HKUST, ...',
-    type: 'Type',
-    undergraduate: 'Undergraduate',
-    major: 'Major',
-    institution: 'Institution',
-    targetViewerNumber: 'Target Viewer Number',
-    recommended: 'Recommended: 85-141',
-    targetReadingTime: 'Target Reading Time Length Per Viewer',
-    energyCost: 'Energy Cost:',
-    delete: 'Delete',
-    apply: 'Apply',
-    selectSchool: 'Select School',
-    selectType: 'Select Type',
-    confirm: 'Confirm',
-    selectTags: 'Select Tags',
-    maxTags: 'Maximum 5 tags',
-    searchOrCreateTag: 'Search or create tag',
-    atFriends: '@Friends',
-    searchNameOrUsername: 'Search name/username',
-    selected: 'Selected',
-    close: 'Close',
+    setTargetGroup: 'Set Target Group',
+    currentBalance: 'Current Balance:',
+    estimatedCost: 'Estimated Cost:',
+    balanceAfterSend: 'Balance After Send:',
+    publishMessage: 'Publish Message',
   },
   CN: {
-    newPost: '新建帖子',
+    targetedPost: '定向信息',
     send: '发送',
     cancel: '取消',
-    title: '标题（选填）', // 修改：添加可选提示
-    content: '内容...',
+    title: '标题',
+    content: '如果需要回复，请记得留下你的联系方式喔！',
     tags: '标签',
     user: '用户',
-    expand: '展开',
+    expand: '全屏',
     collapse: '收起',
-    switchToTargeted: '切换到定向消息',
     publishSuccess: '帖子发布成功！',
     publishFailed: '发布失败',
-    titleRequired: '请输入标题', // 保留但不再使用
     contentRequired: '请输入内容',
     publishing: '发布中...',
-    uploadingImages: '图片上传中...',
-    addImage: '添加图片',
-    filters: '过滤器',
-    school: '学校',
-    schoolList: '中大、港大、科大等...',
-    type: '类型',
-    undergraduate: '本科生',
-    major: '专业',
-    institution: '机构',
-    targetViewerNumber: '目标观看人数',
-    recommended: '推荐: 85-141',
-    targetReadingTime: '每位观看者目标阅读时长',
-    energyCost: '能量消耗:',
-    delete: '删除',
-    apply: '应用',
-    selectSchool: '选择学校',
-    selectType: '选择类型',
-    confirm: '确认',
-    selectTags: '选择标签',
-    maxTags: '最多5个标签',
-    searchOrCreateTag: '搜索或创建标签',
-    atFriends: '@好友',
-    searchNameOrUsername: '搜索昵称/用户名',
-    selected: '已选',
-    close: '关闭',
+    setTargetGroup: '设置目标群体',
+    currentBalance: '当前余额:',
+    estimatedCost: '预计消耗:',
+    balanceAfterSend: '发送后余额:',
+    publishMessage: '发布消息',
   }
 };
 
 const { width: screenWidth } = Dimensions.get('window');
 const imageSize = (screenWidth - 80) / 3;
 
-// 热门标签
-const HOT_TAGS = [
-  '考研', 'OOTD', '旅游', '美食', '开箱', '健身', '护肤', '数码', '读书', 'vlog', '职场', '母婴',
-  '学习', '生活', '分享', '推荐', '校园', '实习', '求职', '课程', '导师', '论文', '毕业',
-  'Study', 'Life', 'Campus', 'Food', 'Travel', 'Books', 'Tech', 'Fashion', 'Fitness'
-];
-
-// 示例联系人数据
-const SAMPLE_USERS = [
-  { id: '1', name: 'Alice Wang', username: 'alice_w', avatar: 'https://i.pravatar.cc/150?img=1' },
-  { id: '2', name: 'Bob Chen', username: 'bob_chen', avatar: 'https://i.pravatar.cc/150?img=2' },
-  { id: '3', name: 'Cathy Liu', username: 'cathy_l', avatar: 'https://i.pravatar.cc/150?img=3' },
-  { id: '4', name: 'David Zhang', username: 'david_z', avatar: 'https://i.pravatar.cc/150?img=4' },
-  { id: '5', name: 'Emma Li', username: 'emma_li', avatar: 'https://i.pravatar.cc/150?img=5' },
-  { id: '6', name: '小明', username: 'xiaoming', avatar: 'https://i.pravatar.cc/150?img=6' },
-  { id: '7', name: 'Lily', username: 'lily', avatar: 'https://i.pravatar.cc/150?img=7' },
-  { id: '8', name: '王同学', username: 'wang_student', avatar: 'https://i.pravatar.cc/150?img=8' },
-];
-
 // 学校和类型选择选项
 const schoolOptions = [
-  { id: 'cuhk', name: 'CUHK', fullName: 'Chinese University of Hong Kong' },        // CUHK 移到第一位
-  { id: 'hku', name: 'HKU', fullName: 'University of Hong Kong' },        // HKU 移到第二位
+  { id: 'cuhk', name: 'CUHK', fullName: 'Chinese University of Hong Kong' },
+  { id: 'hku', name: 'HKU', fullName: 'University of Hong Kong' },
   { id: 'hkust', name: 'HKUST', fullName: 'Hong Kong University of Science and Technology' },
   { id: 'cityu', name: 'CityU', fullName: 'City University of Hong Kong' },
   { id: 'polyu', name: 'PolyU', fullName: 'Hong Kong Polytechnic University' },
@@ -254,209 +196,161 @@ const typeOptions = [
   { id: 'alumni', name: 'Alumni', description: 'Graduates and former students' },
 ];
 
-// 标签选择器组件
-const TagSelector = ({ visible, onClose, onSelectTag, selectedTags, language }: {
-  visible: boolean;
-  onClose: () => void;
-  onSelectTag: (tag: string) => void;
-  selectedTags: string[];
-  language: 'EN' | 'CN';
-}) => {
-  const [search, setSearch] = useState('');
-  
-  const t = text[language];
-  const MAX_TAGS = 5;
-
-  const handleTagPress = (tag: string) => {
-    onSelectTag(tag); // 直接调用父组件的处理函数
-  };
-
-  const handleDelete = (tag: string) => {
-    onSelectTag(tag); // 删除也是调用同一个函数
-  };
-
-  // 支持搜索或自定义标签
-  const displayTags = search.trim()
-    ? HOT_TAGS.filter(t => t.toLowerCase().includes(search.toLowerCase())).concat(
-        HOT_TAGS.some(hotTag => hotTag.toLowerCase() === search.toLowerCase()) ? [] : [search.trim()]
-      )
-    : HOT_TAGS;
-
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.tagModalBg}>
-        <View style={styles.tagModalContainer}>
-          <View style={styles.tagModalHeader}>
-            <Text style={styles.tagModalTitle}>
-              {t.selectTags}（最多{MAX_TAGS}个）
-            </Text>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={styles.tagModalClose}>×</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.tagModalContent}>
-            <TextInput
-              style={styles.tagSearchInput}
-              value={search}
-              onChangeText={setSearch}
-              placeholder={t.searchOrCreateTag}
-              placeholderTextColor="#ACB1C6"
-            />
-
-            {/* 已选标签 */}
-            {selectedTags.length > 0 && (
-              <View style={styles.selectedTagsContainer}>
-                <Text style={styles.selectedTagsTitle}>已选标签：</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.selectedTagsRow}>
-                    {selectedTags.map(tag => (
-                      <View key={tag} style={styles.selectedTag}>
-                        <Text style={styles.selectedTagText}>#{tag}</Text>
-                        <TouchableOpacity onPress={() => handleDelete(tag)}>
-                          <Text style={styles.deleteTagBtn}>×</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </View>
-                </ScrollView>
-              </View>
-            )}
-
-            {/* 推荐标签 */}
-            <Text style={styles.tagSectionTitle}>
-              {search.trim() ? '搜索结果' : '热门标签'}
-            </Text>
-            <ScrollView style={styles.tagScrollView} showsVerticalScrollIndicator={false}>
-              <View style={styles.tagGrid}>
-                {displayTags.map(tag => (
-                  <TouchableOpacity
-                    key={tag}
-                    style={[
-                      styles.tagItem,
-                      selectedTags.includes(tag) && styles.tagItemSelected,
-                      selectedTags.length >= MAX_TAGS && !selectedTags.includes(tag) && styles.tagItemDisabled
-                    ]}
-                    onPress={() => handleTagPress(tag)}
-                    disabled={selectedTags.length >= MAX_TAGS && !selectedTags.includes(tag)}
-                  >
-                    <Text style={[
-                      styles.tagItemText,
-                      selectedTags.includes(tag) && styles.tagItemTextSelected
-                    ]}>
-                      #{tag}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-};
-
-// @用户选择器组件
-const AtUserSelector = ({ visible, onClose, onSelectUser, selectedUsers, language }: {
-  visible: boolean;
-  onClose: () => void;
-  onSelectUser: (user: any) => void;
-  selectedUsers: string[];
-  language: 'EN' | 'CN';
-}) => {
-  const [search, setSearch] = useState('');
-  
-  const t = text[language];
-
-  // 筛选用户
-  const filteredUsers = search
-    ? SAMPLE_USERS.filter(u => 
-        u.name.toLowerCase().includes(search.toLowerCase()) || 
-        u.username.toLowerCase().includes(search.toLowerCase())
-      )
-    : SAMPLE_USERS;
-
-  const handleUserSelect = (user: any) => {
-    onSelectUser(user);
-  };
-
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.atModalBg}>
-        <View style={styles.atModalContainer}>
-          <View style={styles.atModalHeader}>
-            <Text style={styles.atModalTitle}>{t.atFriends}</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={styles.atModalClose}>×</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <TextInput
-            style={styles.atSearchInput}
-            placeholder={t.searchNameOrUsername}
-            placeholderTextColor="#ACB1C6"
-            value={search}
-            onChangeText={setSearch}
-          />
-          
-          <FlatList
-            data={filteredUsers}
-            keyExtractor={u => u.id}
-            style={styles.atUserList}
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.atUserRow}
-                onPress={() => handleUserSelect(item)}
-              >
-                <Image source={{ uri: item.avatar }} style={styles.atUserAvatar} />
-                <View style={styles.atUserInfo}>
-                  <Text style={styles.atUserName}>{item.name}</Text>
-                  <Text style={styles.atUserUsername}>@{item.username}</Text>
-                </View>
-                {selectedUsers.includes(item.username) && (
-                  <Text style={styles.atUserSelected}>{t.selected}</Text>
-                )}
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      </View>
-    </Modal>
-  );
-};
+// 专业选项（只显示英文）
+const majorOptions = [
+  {
+    faculty: 'Faculty of Arts',
+    majors: [
+      { id: 'anthropology', name: 'Anthropology' },
+      { id: 'bimodal-bilingual', name: 'Bimodal Bilingual Studies' },
+      { id: 'chinese-lang-lit', name: 'Chinese Language and Literature' },
+      { id: 'chinese-studies', name: 'Chinese Studies' },
+      { id: 'english', name: 'English' },
+      { id: 'fine-arts', name: 'Fine Arts' },
+      { id: 'history', name: 'History' },
+      { id: 'japanese', name: 'Japanese Studies' },
+      { id: 'linguistics', name: 'Linguistics' },
+      { id: 'music', name: 'Music' },
+      { id: 'philosophy', name: 'Philosophy' },
+      { id: 'public-history', name: 'Public History' },
+      { id: 'public-humanities', name: 'Public Humanities' },
+      { id: 'religious-studies', name: 'Religious Studies' },
+      { id: 'theology', name: 'Theology' },
+      { id: 'translation', name: 'Translation' },
+    ]
+  },
+  {
+    faculty: 'Faculty of Business',
+    majors: [
+      { id: 'global-business', name: 'Global Business Studies' },
+      { id: 'biotech-entrepreneurship', name: 'Biotechnology, Entrepreneurship and Healthcare Management' },
+      { id: 'integrated-bba', name: 'Integrated BBA Programme' },
+      { id: 'global-economics', name: 'Global Economics and Finance' },
+      { id: 'prof-accountancy', name: 'Professional Accountancy' },
+      { id: 'hospitality-realestate', name: 'Hospitality and Real Estate' },
+      { id: 'quantitative-finance', name: 'Quantitative Finance' },
+      { id: 'hotel-tourism', name: 'Hotel and Tourism Management' },
+      { id: 'insurance-finance', name: 'Insurance, Financial and Actuarial Analysis' },
+      { id: 'bba-jd', name: 'BBA(IBBA)-JD Double Degree Programme' },
+      { id: 'quant-risk', name: 'Quantitative Finance and Risk Management Science' },
+    ]
+  },
+  {
+    faculty: 'Faculty of Education',
+    majors: [
+      { id: 'chinese-lang-ed', name: 'Chinese Language Studies (BA) and Chinese Language Education (BEd)' },
+      { id: 'early-childhood', name: 'Early Childhood Education' },
+      { id: 'english-lang-ed', name: 'English Studies (BA) and English Language Education (BEd)' },
+      { id: 'exercise-science', name: 'Exercise Science and Health Education' },
+      { id: 'human-movement', name: 'Human Movement Science and Health Studies' },
+      { id: 'learning-design-tech', name: 'Learning Design and Technology' },
+      { id: 'math-education', name: 'Mathematics and Mathematics Education' },
+      { id: 'physical-ed', name: 'Physical Education, Exercise Science and Health' },
+    ]
+  },
+  {
+    faculty: 'Faculty of Engineering',
+    majors: [
+      { id: 'aerospace-earth', name: 'Aerospace Science and Earth Informatics & X Double Major Programme' },
+      { id: 'ai-systems', name: 'Artificial Intelligence: Systems and Technologies' },
+      { id: 'biomedical-eng', name: 'Biomedical Engineering' },
+      { id: 'comp-data-science', name: 'Computational Data Science' },
+      { id: 'comp-engineering', name: 'Computer Engineering' },
+      { id: 'comp-science', name: 'Computer Science' },
+      { id: 'comp-sci-eng', name: 'Computer Science and Engineering' },
+      { id: 'electronic-eng', name: 'Electronic Engineering' },
+      { id: 'energy-env-eng', name: 'Energy and Environmental Engineering' },
+      { id: 'fintech', name: 'Financial Technology' },
+      { id: 'info-engineering', name: 'Information Engineering' },
+      { id: 'materials-eng', name: 'Materials Science and Engineering' },
+      { id: 'math-info-eng', name: 'Mathematics and Information Engineering' },
+      { id: 'mech-automation', name: 'Mechanical and Automation Engineering' },
+      { id: 'systems-eng', name: 'Systems Engineering and Engineering Management' },
+    ]
+  },
+  {
+    faculty: 'Faculty of Law',
+    majors: [
+      { id: 'law', name: 'Laws' },
+      { id: 'bba-jd-law', name: 'BBA(IBBA)-JD Double Degree Programme' },
+    ]
+  },
+  {
+    faculty: 'Faculty of Medicine',
+    majors: [
+      { id: 'biomedical-sci', name: 'Biomedical Sciences' },
+      { id: 'chinese-medicine', name: 'Chinese Medicine' },
+      { id: 'community-health', name: 'Community Health Practice' },
+      { id: 'gerontology', name: 'Gerontology' },
+      { id: 'medicine', name: 'Medicine (MBChB) Programme' },
+      { id: 'medicine-gps', name: 'Medicine (MBChB) Programme Global Physician-Leadership Stream (GPS)' },
+      { id: 'nursing', name: 'Nursing' },
+      { id: 'pharmacy', name: 'Pharmacy' },
+      { id: 'public-health', name: 'Public Health' },
+    ]
+  },
+  {
+    faculty: 'Faculty of Science',
+    majors: [
+      { id: 'earth-env-sciences', name: 'Earth and Environmental Sciences' },
+      { id: 'enrichment-math', name: 'Enrichment Mathematics' },
+      { id: 'theoretical-physics', name: 'Enrichment Stream in Theoretical Physics' },
+      { id: 'natural-sciences', name: 'Natural Sciences' },
+      { id: 'risk-mgmt-science', name: 'Risk Management Science' },
+      { id: 'science', name: 'Science' },
+    ]
+  },
+  {
+    faculty: 'Faculty of Social Science',
+    majors: [
+      { id: 'architectural', name: 'Architectural Studies' },
+      { id: 'economics', name: 'Economics' },
+      { id: 'data-policy', name: 'Data Science and Policy Studies' },
+      { id: 'economics-dual', name: 'Economics (CUHK–Tsinghua University Dual Undergraduate Degree Programme)' },
+      { id: 'gender-studies', name: 'Gender Studies' },
+      { id: 'geography-resource', name: 'Geography and Resource Management' },
+      { id: 'global-comm', name: 'Global Communication' },
+      { id: 'global-studies', name: 'Global Studies' },
+      { id: 'govt-public-admin', name: 'Government and Public Administration' },
+      { id: 'journalism-comm', name: 'Journalism and Communication' },
+      { id: 'psychology', name: 'Psychology' },
+      { id: 'social-science', name: 'Social Science (Broad-based)' },
+      { id: 'social-work', name: 'Social Work' },
+      { id: 'society-sustainable', name: 'Society and Sustainable Development' },
+      { id: 'sociology', name: 'Sociology' },
+      { id: 'urban-studies', name: 'Urban Studies' },
+    ]
+  },
+];
 
 // 主组件
 export default function PostScreen() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [language, setLanguage] = useState<'EN' | 'CN'>('EN');
+  const [language, setLanguage] = useState<'EN' | 'CN'>('CN'); // 默认中文
   const [isPublishing, setIsPublishing] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [showTargetedFilter, setShowTargetedFilter] = useState(false);
-  const [isTargetedMode, setIsTargetedMode] = useState(false);
   
   // 图片相关状态
   const [images, setImages] = useState<string[]>([]);
   const [isEditingImages, setIsEditingImages] = useState(false);
-  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
 
-  // 新增选择器状态
+  // 目标群体选择状态
+  const [showTargetFilter, setShowTargetFilter] = useState(false);
   const [showSchoolSelector, setShowSchoolSelector] = useState(false);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
+  const [showMajorSelector, setShowMajorSelector] = useState(false);
+  
   const [selectedSchools, setSelectedSchools] = useState<string[]>(['cuhk', 'hku', 'hkust']);
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['undergraduate']);
+  const [selectedMajors, setSelectedMajors] = useState<string[]>([]);
+  const [selectedFaculty, setSelectedFaculty] = useState<string>('');
 
-  // 新增数值输入状态
+  // 数值输入状态
   const [targetViewers, setTargetViewers] = useState<number>(100);
   const [targetReadingTime, setTargetReadingTime] = useState<number>(30);
 
-  // 新增标签和@用户选择器状态
-  const [showTagSelector, setShowTagSelector] = useState(false);
-  const [showAtUserSelector, setShowAtUserSelector] = useState(false);
-  const [selectedAtUsers, setSelectedAtUsers] = useState<string[]>([]);
-  const [cursorPosition, setCursorPosition] = useState(0);
+  // 余额相关状态
+  const [currentBalance, setCurrentBalance] = useState<number>(2000);
   
   // 展开状态
   const [isExpanded, setIsExpanded] = useState(false);
@@ -483,104 +377,40 @@ export default function PostScreen() {
 
   const t = text[language];
 
+  // 计算推荐的观看人数范围
+  const calculateRecommendedViewers = () => {
+    let baseCount = 1; // 基础人数
+    
+    // 每个学校增加基础人数
+    const schoolMultiplier = selectedSchools.length;
+    baseCount = baseCount * schoolMultiplier * 2;
+    
+    // 每个类型增加1.5-2倍
+    const typeMultiplier = selectedTypes.length;
+    baseCount = baseCount * typeMultiplier * 1.75; // 取中间值1.75
+    
+    // 每个专业增加10-15人
+    const majorCount = selectedMajors.length;
+    const majorAddition = majorCount * 12.5; // 取中间值12.5
+    
+    const total = Math.round(baseCount + majorAddition);
+    const min = Math.round(total * 0.85); // -15%
+    const max = Math.round(total * 1.15); // +15%
+    
+    return { min, max, suggested: total };
+  };
+
   // 计算能量消耗
   const calculateEnergyCost = () => {
-    const energy = (targetViewers * targetReadingTime) / 60;
-    return Math.round(energy * 100) / 100;
+    const totalMinutes = targetReadingTime / 60; // 转换为分钟
+    const energy = targetViewers * totalMinutes;
+    return Math.round(energy * 100) / 100; // 保留两位小数
   };
 
-  // 处理标签选择
-  const handleTagSelect = (tag: string) => {
-    if (selectedTags.includes(tag)) {
-      // 如果已选中，则取消选择
-      setSelectedTags(selectedTags.filter(t => t !== tag));
-    } else if (selectedTags.length < 5) {
-      // 如果未选中且未达到上限，则添加
-      setSelectedTags([...selectedTags, tag]);
-    } else {
-      // 达到上限时提示用户
-      Alert.alert('提示', '最多只能选择5个标签');
-    }
-  };
-
-  // 修改：处理标签按钮点击 - 只打开选择器，不修改内容
-  const handleTagButtonPress = () => {
-    setShowTagSelector(true);
-  };
-
-  // 修改：处理@用户点击 - 在内容中插入@符号并打开选择器
-  const handleAtUserButtonPress = () => {
-    const newContent = content.slice(0, cursorPosition) + '@' + content.slice(cursorPosition);
-    setContent(newContent);
-    setCursorPosition(cursorPosition + 1);
-    setShowAtUserSelector(true);
-  };
-
-  // 处理@用户选择
-  const handleAtUserSelect = (user: any) => {
-    const atText = `@${user.username} `;
-    const beforeCursor = content.slice(0, cursorPosition);
-    const afterCursor = content.slice(cursorPosition);
-    
-    const lastAtIndex = beforeCursor.lastIndexOf('@');
-    if (lastAtIndex !== -1) {
-      const newContent = beforeCursor.slice(0, lastAtIndex) + atText + afterCursor;
-      setContent(newContent);
-      setCursorPosition(lastAtIndex + atText.length);
-    }
-    
-    if (!selectedAtUsers.includes(user.username)) {
-      setSelectedAtUsers([...selectedAtUsers, user.username]);
-    }
-    
-    setShowAtUserSelector(false);
-  };
-
-  // 新增：专门处理内容输入框的文本变化
-  const handleContentChange = (text: string) => {
-    setContent(text);
-    
-    // 自动检测并提取hashtag到标签列表（但不修改显示的内容）
-    const detectedTags = extractHashtags(text);
-    
-    // 将检测到的标签添加到选中的标签中（去重并限制数量）
-    if (detectedTags.length > 0) {
-      setSelectedTags(prev => {
-        const newTags = [...prev];
-        detectedTags.forEach(tag => {
-          if (!newTags.includes(tag) && newTags.length < 5) { // 限制最多5个
-            newTags.push(tag);
-          }
-        });
-        return newTags;
-      });
-    }
-  };
-
-  // 修改：专门处理标题输入框的文本变化
-  const handleTitleChange = (text: string) => {
-    setTitle(text);
-    
-    // 也从标题中自动检测hashtag
-    const detectedTags = extractHashtags(text);
-    
-    // 将检测到的标签添加到选中的标签中（去重并限制数量）
-    if (detectedTags.length > 0) {
-      setSelectedTags(prev => {
-        const newTags = [...prev];
-        detectedTags.forEach(tag => {
-          if (!newTags.includes(tag) && newTags.length < 5) { // 限制最多5个
-            newTags.push(tag);
-          }
-        });
-        return newTags;
-      });
-    }
-  };
-
-  // 处理内容输入框选择变化
-  const handleContentSelectionChange = (event: any) => {
-    setCursorPosition(event.nativeEvent.selection.start);
+  // 计算发送后余额
+  const getBalanceAfterSend = () => {
+    const cost = calculateEnergyCost();
+    return Math.max(0, currentBalance - cost);
   };
 
   // 获取选中学校的显示文本
@@ -597,6 +427,19 @@ export default function PostScreen() {
     if (selectedTypes.length === typeOptions.length) return 'All Types';
     const names = selectedTypes.map(id => typeOptions.find(t => t.id === id)?.name).filter(Boolean);
     return names.join(', ');
+  };
+
+  // 获取选中专业的显示文本
+  const getSelectedMajorsText = () => {
+    if (selectedMajors.length === 0) return '';
+    if (selectedMajors.length > 2) return `${selectedMajors.length} majors selected`;
+    return selectedMajors.map(id => {
+      for (const facultyGroup of majorOptions) {
+        const major = facultyGroup.majors.find(m => m.id === id);
+        if (major) return major.name;
+      }
+      return '';
+    }).filter(Boolean).join(', ');
   };
 
   // 处理学校选择
@@ -617,233 +460,115 @@ export default function PostScreen() {
     );
   };
 
-  // 处理数值输入
-  const handleViewersChange = (text: string) => {
-    const num = parseInt(text);
-    if (!isNaN(num) && num > 0) {
-      setTargetViewers(num);
-    }
+  // 处理专业选择
+  const handleMajorToggle = (majorId: string) => {
+    setSelectedMajors(prev => 
+      prev.includes(majorId)
+        ? prev.filter(id => id !== majorId)
+        : [...prev, majorId]
+    );
   };
 
-  const handleReadingTimeChange = (text: string) => {
-    const num = parseInt(text);
-    if (!isNaN(num) && num > 0) {
-      setTargetReadingTime(num);
-    }
-  };
-
-const handlePublish = async () => {
-  // 移除title必填验证，只保留content必填验证
-  if (!content.trim()) {
-    if (Platform.OS === 'web') {
-      window.alert(t.contentRequired);
-    } else {
-      Alert.alert('Error', t.contentRequired);
-    }
-    return;
-  }
-
-  setIsPublishing(true);
-  
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    
-    if (!token) {
+  const handlePublish = async () => {
+    if (!content.trim()) {
       if (Platform.OS === 'web') {
-        window.alert('Please login first');
+        window.alert(t.contentRequired);
       } else {
-        Alert.alert('Error', 'Please login first');
+        Alert.alert('Error', t.contentRequired);
       }
       return;
     }
 
-    let imageUrl: string | undefined = undefined;
+    setIsPublishing(true);
     
-    // 图片上传逻辑保持不变
-    if (images.length > 0) {
-      console.log('Starting image upload, total images:', images.length);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
       
-      try {
+      if (!token) {
+        if (Platform.OS === 'web') {
+          window.alert('Please login first');
+        } else {
+          Alert.alert('Error', 'Please login first');
+        }
+        return;
+      }
+
+      let imageUrl: string | undefined = undefined;
+      
+      if (images.length > 0) {
         for (let i = 0; i < images.length; i++) {
-          const imageUri = images[i];
-          console.log(`Uploading image ${i + 1}/${images.length}:`, imageUri);
-          
-          const uploadResult = await uploadImage(imageUri, token);
-          console.log(`Upload result for image ${i + 1}:`, uploadResult);
-          
+          const uploadResult = await uploadImage(images[i], token);
           if (uploadResult.success && uploadResult.data?.key) {
             imageUrl = uploadResult.data.key;
-            console.log('✅ Successfully uploaded image with key:', imageUrl);
             break;
-          } else {
-            console.warn(`❌ Failed to upload image ${i + 1}:`, uploadResult.message);
           }
-        }
-        
-        if (!imageUrl) {
-          console.error('❌ All image uploads failed');
-          if (Platform.OS === 'web') {
-            const proceed = window.confirm('图片上传失败，是否继续发布文字内容？');
-            if (!proceed) {
-              return;
-            }
-          } else {
-            Alert.alert(
-              '图片上传失败', 
-              '是否继续发布文字内容？',
-              [
-                { text: '取消', style: 'cancel', onPress: () => {} },
-                { 
-                  text: '继续', 
-                  onPress: () => {
-                    // 继续发布逻辑将在下面执行
-                  }
-                }
-              ]
-            );
-          }
-        } else {
-          console.log('✅ Final image URL for post:', imageUrl);
-        }
-      } catch (error) {
-        console.error('❌ Error during image upload:', error);
-        if (Platform.OS === 'web') {
-          const proceed = window.confirm('图片上传遇到网络错误，是否继续发布文字内容？');
-          if (!proceed) {
-            return;
-          }
-        } else {
-          Alert.alert('上传错误', '图片上传遇到网络错误，是否继续发布文字内容？');
         }
       }
-    }
 
-    const tagsFromTitle = extractHashtags(title);
-    const tagsFromContent = extractHashtags(content);
-    const pickedTags = selectedTags || [];
-
-    const allTags = Array.from(new Set([
-      ...pickedTags,
-      ...tagsFromTitle,
-      ...tagsFromContent,
-    ])).slice(0, 5);
-
-    // 修改：自动生成title的逻辑
-    let finalTitle: string;
-    if (title.trim()) {
-      // 如果有输入title，使用输入的title
-      finalTitle = title.trim();
-    } else {
-      // 如果没有输入title，使用content的前六个字符
-      const cleanContent = stripHashtags(content);
-      finalTitle = cleanContent.trim().substring(0, 6) || 'Untitled';
-    }
-
-    const cleanContent = stripHashtags(content);
-
-    console.log('📝 Post data summary:');
-    console.log('- Original title input:', title);
-    console.log('- Final title:', finalTitle);
-    console.log('- Content length:', cleanContent.length);
-    console.log('- Image URL:', imageUrl || 'No image');
-    console.log('- Tags:', allTags);
-    console.log('- Is targeted:', isTargetedMode);
-
-    const postData: PostData = {
-      title: finalTitle,
-      content: cleanContent,
-      image_url: imageUrl || "",
-      ref: isTargetedMode ? "targeted" : "",
-      real_name: !isTargetedMode,
-      tags: allTags.join(','),
-      type: isTargetedMode ? "targeted" : "normal",
-    };
-
-    console.log('🚀 Sending post data:', JSON.stringify(postData, null, 2));
-
-    const result = await sendPost(postData, token);
-
-    if (result.success) {
-      // 清空表单
-      setTitle('');
-      setContent('');
-      setSelectedTags([]);
-      setSelectedAtUsers([]);
-      setImages([]);
-      setUploadedImageUrls([]);
-      setIsTargetedMode(false);
-
-      console.log('✅ Post published successfully!');      if (Platform.OS === 'web') {
-        window.alert(t.publishSuccess);
-        window.location.href = window.location.origin + '/';
+      let finalTitle: string;
+      if (title.trim()) {
+        finalTitle = title.trim();
       } else {
-        Alert.alert('Success', t.publishSuccess, [
-          {
-            text: 'OK',
-            onPress: () => {
-              try {
-                router.replace('/');
-              } catch (error) {
-                console.error('Router replace failed:', error);
-                router.push('/');
+        const cleanContent = stripHashtags(content);
+        finalTitle = cleanContent.trim().substring(0, 6) || 'Untitled';
+      }
+
+      const cleanContent = stripHashtags(content);
+
+      const postData: PostData = {
+        title: finalTitle,
+        content: cleanContent,
+        image_url: imageUrl || "",
+        ref: "targeted",
+        real_name: false,
+        tags: '',
+        type: "targeted",
+      };
+
+      const result = await sendPost(postData, token);
+
+      if (result.success) {
+        setTitle('');
+        setContent('');
+        setImages([]);
+
+        if (Platform.OS === 'web') {
+          window.alert(t.publishSuccess);
+          window.location.href = window.location.origin + '/';
+        } else {
+          Alert.alert('Success', t.publishSuccess, [
+            {
+              text: 'OK',
+              onPress: () => {
+                try {
+                  router.replace('/');
+                } catch (error) {
+                  router.push('/');
+                }
               }
             }
-          }
-        ]);
-      }
-    } else {
-      console.error('❌ Post publish failed:', result.message);
-      if (Platform.OS === 'web') {
-        window.alert(result.message || t.publishFailed);
+          ]);
+        }
       } else {
-        Alert.alert('Error', result.message || t.publishFailed);
+        if (Platform.OS === 'web') {
+          window.alert(result.message || t.publishFailed);
+        } else {
+          Alert.alert('Error', result.message || t.publishFailed);
+        }
       }
+    } catch (error) {
+      console.error('Error publishing post:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Network error. Please try again.');
+      } else {
+        Alert.alert('Error', 'Network error. Please try again.');
+      }
+    } finally {
+      setIsPublishing(false);
     }
-  } catch (error) {
-    console.error('❌ Error publishing post:', error);
-    if (Platform.OS === 'web') {
-      window.alert('Network error. Please try again.');
-    } else {
-      Alert.alert('Error', 'Network error. Please try again.');
-    }
-  } finally {
-    setIsPublishing(false);
-  }
-};
+  };
 
-  // 取消发布
-  const handleCancel = () => {
-    if (title.trim() || content.trim() || images.length > 0) {
-      Alert.alert(
-        'Confirm',
-        language === 'EN' ? 'Are you sure you want to discard this post?' : '确定要放弃这篇帖子吗？',
-        [
-          { text: language === 'EN' ? 'Cancel' : '取消', style: 'cancel' },
-          { 
-            text: language === 'EN' ? 'Discard' : '放弃', 
-            style: 'destructive',
-            onPress: () => {
-              setTitle('');
-              setContent('');
-              setSelectedTags([]);
-              setSelectedAtUsers([]);
-              setImages([]);
-              setUploadedImageUrls([]);
-              setIsTargetedMode(false);
-
-              // 新增：返回到 index 界面
-              router.back();
-            }
-          }
-        ]
-      );
-    } else {
-      // 新增：如果没有输入内容，直接返回
-      router.back();
-    };
-  }
-
-    // 请求相册权限
+  // 请求相册权限
   const requestPermission = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -895,406 +620,277 @@ const handlePublish = async () => {
     setIsEditingImages(true);
   };
 
-  // 渲染图片网格
-  const renderImageGrid = () => {
-    const rows = [];
-    const imageCount = images.length;
-    const showAddButton = imageCount < 9;
-    const totalItems = showAddButton ? imageCount + 1 : imageCount;
-    
-    for (let i = 0; i < Math.ceil(totalItems / 3); i++) {
-      const rowItems = [];
-      for (let j = 0; j < 3; j++) {
-        const index = i * 3 + j;
-        if (index < imageCount) {
-          // 渲染图片
-          rowItems.push(
+  // 渲染专业选择器
+  const renderMajorSelector = () => (
+    <View style={styles.inlineFilterContainer}>
+      <View style={styles.inlineFilterHeader}>
+        <TouchableOpacity onPress={() => {
+          if (selectedFaculty) {
+            setSelectedFaculty('');
+          } else {
+            setShowMajorSelector(false);
+          }
+        }}>
+          <Text style={styles.inlineFilterBack}>
+            {selectedFaculty ? '← Back' : '← Back'}
+          </Text>
+        </TouchableOpacity>
+        <Text style={styles.inlineFilterTitle}>
+          {selectedFaculty || 'Select Major'}
+        </Text>
+        <TouchableOpacity onPress={() => {
+          setShowMajorSelector(false);
+          setSelectedFaculty('');
+        }}>
+          <Text style={styles.inlineFilterDone}>Done</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <ScrollView style={styles.inlineFilterContent} showsVerticalScrollIndicator={false}>
+        {!selectedFaculty ? (
+          majorOptions.map((facultyGroup, index) => (
             <TouchableOpacity
-              key={index}
-              style={styles.imageContainer}
-              onLongPress={onLongPress}
-              delayLongPress={2000}
+              key={facultyGroup.faculty}
+              style={[
+                styles.filterItem,
+                index === majorOptions.length - 1 && styles.filterItemLast
+              ]}
+              onPress={() => setSelectedFaculty(facultyGroup.faculty)}
             >
-              <Image
-                source={{ uri: images[index] }}
-                style={styles.uploadedImage}
-                resizeMode="cover"
-              />
-              {isEditingImages && (
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => deleteImage(index)}
-                >
-                  <View style={styles.deleteIcon}>
-                    <DeleteIcon />
+              <View style={styles.filterItemContent}>
+                <Text style={styles.filterItemName}>{facultyGroup.faculty}</Text>
+                <DownArrowIcon />
+              </View>
+            </TouchableOpacity>
+          ))
+        ) : (
+          majorOptions
+            .find(f => f.faculty === selectedFaculty)
+            ?.majors.map((major, index, array) => (
+              <TouchableOpacity
+                key={major.id}
+                style={[
+                  styles.filterItem,
+                  index === array.length - 1 && styles.filterItemLast
+                ]}
+                onPress={() => handleMajorToggle(major.id)}
+              >
+                <View style={styles.filterItemContent}>
+                  <View style={styles.filterItemText}>
+                    <Text style={styles.filterItemName}>{major.name}</Text>
                   </View>
-                </TouchableOpacity>
-              )}
-            </TouchableOpacity>
-          );
-        } else if (index === imageCount && showAddButton) {
-          // 渲染添加按钮
-          rowItems.push(
-            <TouchableOpacity
-              key="add"
-              style={styles.addImageButton}
-              onPress={pickImage}
-            >
-              <AddImageIcon />
-            </TouchableOpacity>
-          );
-        } else {
-          // 空白占位
-          rowItems.push(<View key={`empty-${index}`} style={styles.emptySlot} />);
-        }
-      }
-      rows.push(
-        <View key={i} style={styles.imageRow}>
-          {rowItems}
-        </View>
-      );
-    }
-
-    return rows;
-  };
-
-  // 处理应用过滤器
-  const handleApplyFilter = () => {
-    setIsTargetedMode(true);
-    setShowTargetedFilter(false);
-  };
-
-  // 点击其他区域退出编辑模式
-  const exitEditMode = () => {
-    if (isEditingImages) {
-      setIsEditingImages(false);
-    }
-  };
-
-  // 渲染学校选择器
-  const renderSchoolSelector = () => (
-    <Modal
-      visible={showSchoolSelector}
-      animationType="slide"
-      presentationStyle="pageSheet"
-    >
-      <SafeAreaView style={styles.filterScreenContainer}>
-        <View style={styles.filterHeader}>
-          <TouchableOpacity onPress={() => setShowSchoolSelector(false)}>
-            <Text style={styles.filterHeaderButton}>Cancel</Text>
-          </TouchableOpacity>
-          <Text style={styles.filterHeaderTitle}>{t.selectSchool}</Text>
-          <TouchableOpacity onPress={() => setShowSchoolSelector(false)}>
-            <Text style={styles.filterHeaderButton}>Done</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <ScrollView style={styles.filterContent}>
-          {schoolOptions.map((school) => (
-            <TouchableOpacity
-              key={school.id}
-              style={styles.filterItem}
-              onPress={() => handleSchoolToggle(school.id)}
-            >
-              <View style={styles.filterItemContent}>
-                <View style={styles.filterItemText}>
-                  <Text style={styles.filterItemName}>{school.name}</Text>
-                  <Text style={styles.filterItemDescription}>{school.fullName}</Text>
+                  <View style={[
+                    styles.filterCheckbox,
+                    selectedMajors.includes(major.id) && styles.filterCheckboxChecked
+                  ]}>
+                    {selectedMajors.includes(major.id) && (
+                      <Text style={styles.filterCheckboxText}>✓</Text>
+                    )}
+                  </View>
                 </View>
-                <View style={[
-                  styles.filterCheckbox,
-                  selectedSchools.includes(school.id) && styles.filterCheckboxChecked
-                ]}>
-                  {selectedSchools.includes(school.id) && (
-                    <Text style={styles.filterCheckboxText}>✓</Text>
-                  )}
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
+              </TouchableOpacity>
+            ))
+        )}
+      </ScrollView>
+    </View>
   );
-
-  // 渲染类型选择器
-  const renderTypeSelector = () => (
-    <Modal
-      visible={showTypeSelector}
-      animationType="slide"
-      presentationStyle="pageSheet"
-    >
-      <SafeAreaView style={styles.filterScreenContainer}>
-        <View style={styles.filterHeader}>
-          <TouchableOpacity onPress={() => setShowTypeSelector(false)}>
-            <Text style={styles.filterHeaderButton}>Cancel</Text>
-          </TouchableOpacity>
-          <Text style={styles.filterHeaderTitle}>{t.selectType}</Text>
-          <TouchableOpacity onPress={() => setShowTypeSelector(false)}>
-            <Text style={styles.filterHeaderButton}>Done</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <ScrollView style={styles.filterContent}>
-          {typeOptions.map((type) => (
-            <TouchableOpacity
-              key={type.id}
-              style={styles.filterItem}
-              onPress={() => handleTypeToggle(type.id)}
-            >
-              <View style={styles.filterItemContent}>
-                <View style={styles.filterItemText}>
-                  <Text style={styles.filterItemName}>{type.name}</Text>
-                  <Text style={styles.filterItemDescription}>{type.description}</Text>
-                </View>
-                <View style={[
-                  styles.filterCheckbox,
-                  selectedTypes.includes(type.id) && styles.filterCheckboxChecked
-                ]}>
-                  {selectedTypes.includes(type.id) && (
-                    <Text style={styles.filterCheckboxText}>✓</Text>
-                  )}
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
-  );
-
-  // 添加缺失的 handleExpandToggle 函数
-  const handleExpandToggle = () => {
-    setIsExpanded(!isExpanded);
-  };
 
   return (
-    <View style={styles.container}>
-      {/* Fixed Header */}
-      <View style={styles.fixedHeader}>
-        <View style={styles.headerLeft}>
-          {!isTargetedMode && (
-            <TouchableOpacity 
-              style={[styles.button, styles.cancelButton]} 
-              onPress={handleCancel}
-              disabled={isPublishing}
-            >
-              <Text style={styles.cancelButtonText}>{t.cancel}</Text>
-            </TouchableOpacity>
-          )}
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.scrollView}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <BackIcon />
+          </TouchableOpacity>
+          
+          <Text style={styles.headerTitle}>{t.targetedPost}</Text>
+          
+          <View style={styles.energyBadge}>
+            <LightningIcon size={14} color="#475569" />
+            <Text style={styles.energyBadgeText}>{Math.round(calculateEnergyCost())}</Text>
+          </View>
         </View>
-        
-        <Text style={styles.headerTitle}>{t.newPost}</Text>
-        
-        <View style={styles.headerRight}>
-          {isTargetedMode ? (
+
+        {/* Main Content */}
+        <View style={styles.content}>
+          {/* Title Input */}
+          <View style={styles.inputSection}>
+            <Text style={styles.inputLabel}>{t.title}</Text>
+            <TextInput
+              style={styles.titleInput}
+              placeholder="请输入标题"
+              placeholderTextColor="#ACB1C6"
+              value={title}
+              onChangeText={setTitle}
+              maxLength={100}
+              editable={!isPublishing}
+            />
+          </View>
+
+          {/* Content Input */}
+          <TextInput
+            ref={contentInputRef}
+            style={[styles.contentInput, isExpanded && styles.expandedContentInput]}
+            placeholder={t.content}
+            placeholderTextColor="#ACB1C6"
+            value={content}
+            onChangeText={setContent}
+            multiline
+            numberOfLines={isExpanded ? 15 : 8}
+            textAlignVertical="top"
+            maxLength={1000}
+            editable={!isPublishing}
+          />
+
+          {/* Full Screen Button */}
+          <View style={styles.expandButtonContainer}>
             <TouchableOpacity 
-              onPress={handlePublish}
-              disabled={isPublishing}
-              style={[isPublishing && styles.buttonDisabled]}
+              style={styles.expandButton}
+              onPress={() => setIsExpanded(!isExpanded)}
             >
-              <LinearGradient
-                colors={['#FFD700', '#FF9317']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.gradientSendButton}
-              >
-                <LightningIcon size={16} color="#FFFFFF" />  {/* 明确指定白色 */}
-                <Text style={styles.gradientSendText}>
-                  {isPublishing ? t.publishing : t.send}
-                </Text>
-              </LinearGradient>
+              <ExpandIcon />
+              <Text style={styles.expandButtonText}>{t.expand}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Image Upload */}
+        <View style={styles.imageSection}>
+          {images.length === 0 ? (
+            <TouchableOpacity style={styles.addImageButton} onPress={pickImage}>
+              <View style={styles.addImagePlus}>
+                <View style={styles.addImagePlusH} />
+                <View style={styles.addImagePlusV} />
+              </View>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity 
-              style={[styles.button, styles.sendButton, isPublishing && styles.buttonDisabled]} 
-              onPress={handlePublish}
-              disabled={isPublishing}
-            >
-              <Text style={styles.sendButtonText}>
-                {isPublishing ? t.publishing : t.send}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.imageGridContainer}>
+              {images.map((uri, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.imageContainer}
+                  onLongPress={onLongPress}
+                  delayLongPress={2000}
+                >
+                  <Image source={{ uri }} style={styles.uploadedImage} resizeMode="cover" />
+                  {isEditingImages && (
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => deleteImage(index)}
+                    >
+                      <View style={styles.deleteIcon}>
+                        <DeleteIcon />
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
           )}
         </View>
-      </View>
 
-      {/* Scrollable Content */}
-      <KeyboardAvoidingView 
-        style={styles.contentContainer} 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+        {/* Divider */}
+        <View style={styles.divider} />
+
+        {/* Set Target Group */}
         <TouchableOpacity 
-          style={styles.scrollView} 
-          activeOpacity={1} 
-          onPress={exitEditMode}
+          style={styles.targetGroupButton}
+          onPress={() => setShowTargetFilter(true)}
         >
-          <ScrollView 
-            style={styles.scrollContent}
-            contentContainerStyle={styles.scrollContentContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Input Fields */}
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={[styles.titleInput, isTargetedMode && styles.targetedInput]}
-                placeholder={t.title}
-                placeholderTextColor="#ACB1C6"
-                value={title}
-                onChangeText={handleTitleChange} // 使用专门的标题处理函数
-                maxLength={100}
-                editable={!isPublishing}
-              />
-              
-              <View style={styles.divider} />
-              
-              <TextInput
-                ref={contentInputRef}
-                style={[
-                  styles.contentInput, 
-                  isTargetedMode && styles.targetedInput,
-                  isExpanded && styles.expandedContentInput
-                ]}
-                placeholder={t.content}
-                placeholderTextColor="#ACB1C6"
-                value={content}
-                onChangeText={handleContentChange} // 使用专门的内容处理函数
-                onSelectionChange={handleContentSelectionChange}
-                multiline
-                numberOfLines={isExpanded ? 15 : 8}
-                textAlignVertical="top"
-                maxLength={1000}
-                editable={!isPublishing}
-              />
-
-              {/* Action Buttons */}
-              <View style={styles.actionButtonsContainer}>
-                <View style={styles.leftButtons}>
-                  <TouchableOpacity 
-                    style={[styles.actionButton, selectedTags.length > 0 && styles.actionButtonActive]}
-                    onPress={handleTagButtonPress}
-                    disabled={isPublishing}
-                  >
-                    <TagIcon />
-                    <Text style={[styles.actionButtonText, selectedTags.length > 0 && styles.actionButtonTextActive]}>
-                      {t.tags}
-                      {selectedTags.length > 0 && ` (${selectedTags.length})`}
-                    </Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={[styles.actionButton, selectedAtUsers.length > 0 && styles.actionButtonActive]}
-                    onPress={handleAtUserButtonPress}
-                    disabled={isPublishing}
-                  >
-                    <UserIcon />
-                    <Text style={[styles.actionButtonText, selectedAtUsers.length > 0 && styles.actionButtonTextActive]}>
-                      {t.user}
-                      {selectedAtUsers.length > 0 && ` (${selectedAtUsers.length})`}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                
-                <TouchableOpacity 
-                  style={styles.actionButton} 
-                  onPress={handleExpandToggle}
-                  disabled={isPublishing}
-                >
-                  {isExpanded ? <CollapseIcon /> : <ExpandIcon />}
-                  <Text style={styles.actionButtonText}>
-                    {isExpanded ? t.collapse : t.expand}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+          <View style={styles.targetGroupLeft}>
+            <View style={styles.filterIconContainer}>
+              <FilterIcon />
             </View>
-
-            {/* 显示已选择的标签 */}
-            {selectedTags.length > 0 && (
-              <View style={styles.selectedTagsPreview}>
-                <Text style={styles.selectedTagsTitle}>已选标签：</Text>
-                <View style={styles.selectedTagsContainer}>
-                  {selectedTags.map(tag => (
-                    <TouchableOpacity
-                      key={tag}
-                      style={styles.selectedTagChip}
-                      onPress={() => handleTagSelect(tag)} // 点击可以取消选择
-                    >
-                      <Text style={styles.selectedTagChipText}>#{tag}</Text>
-                      <Text style={styles.selectedTagRemove}>×</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {/* Image Grid */}
-            {!isPublishing && (
-              <View style={styles.imageGridContainer}>
-                {renderImageGrid()}
-              </View>
-            )}
-
-            {/* Targeted Message Option */}
-            <TouchableOpacity 
-              style={styles.targetedMessageContainer}
-              onPress={() => setShowTargetedFilter(true)}
-              disabled={isPublishing}
-            >
-              <View style={styles.targetedMessageContent}>
-                <ImageIcon />
-                <Text style={styles.targetedMessageText}>
-                  {t.switchToTargeted}
-                </Text>
-              </View>
-              {isTargetedMode ? (
-                <View style={styles.targetedBadge}>
-                  <LightningIcon size={12} color="#FFFFFF" />
-                  <Text style={styles.targetedBadgeText}>{calculateEnergyCost()}</Text>
-                </View>
-              ) : (
-                <ArrowRightIcon />
-              )}
-            </TouchableOpacity>
-
-            {/* 底部间距，考虑tab高度 */}
-            <View style={styles.bottomSpacer} />
-          </ScrollView>
+            <Text style={styles.targetGroupText}>{t.setTargetGroup}</Text>
+          </View>
+          <Text style={styles.arrowRight}>›</Text>
         </TouchableOpacity>
-      </KeyboardAvoidingView>
 
-      {/* Targeted Filter Modal */}
+        {/* Balance Statistics */}
+        <View style={styles.balanceSection}>
+          <View style={styles.balanceRow}>
+            <Text style={styles.balanceLabel}>{t.currentBalance}</Text>
+            <View style={styles.balanceValueContainer}>
+              <LightningIcon size={16} color="#FBBF24" />
+              <Text style={styles.balanceValueYellow}>{currentBalance}</Text>
+            </View>
+          </View>
+
+          <View style={styles.balanceRow}>
+            <Text style={styles.balanceLabel}>{t.estimatedCost}</Text>
+            <View style={styles.balanceValueContainer}>
+              <Text style={styles.balanceValueGrey}>{calculateEnergyCost()}</Text>
+            </View>
+          </View>
+
+          <View style={styles.balanceRow}>
+            <Text style={styles.balanceLabel}>{t.balanceAfterSend}</Text>
+            <View style={styles.balanceValueContainer}>
+              <LightningIcon size={16} color="#FBBF24" />
+              <Text style={styles.balanceValueYellow}>{getBalanceAfterSend()}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Publish Button */}
+        <View style={styles.publishButtonContainer}>
+          <TouchableOpacity 
+            style={[styles.publishButton, isPublishing && styles.publishButtonDisabled]}
+            onPress={handlePublish}
+            disabled={isPublishing}
+          >
+            <LightningIcon size={18} color="#94A3B8" />
+            <Text style={styles.publishButtonText}>{isPublishing ? t.publishing : t.publishMessage}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Bottom Spacer */}
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+
+      {/* Target Filter Modal */}
       <Modal
-        visible={showTargetedFilter}
+        visible={showTargetFilter}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowTargetedFilter(false)}
+        onRequestClose={() => setShowTargetFilter(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContentWrapper, { minHeight: 400, maxHeight: '80%' }]}>
-            {/* School Selection Modal */}
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            // 点击遮罩层关闭键盘
+            contentInputRef.current?.blur();
+          }}
+        >
+          <TouchableOpacity 
+            style={styles.modalContentWrapper}
+            activeOpacity={1}
+            onPress={(e) => {
+              // 阻止事件冒泡，点击内容区域不关闭键盘
+              e.stopPropagation();
+            }}
+          >
             {showSchoolSelector ? (
               <View style={styles.inlineFilterContainer}>
                 <View style={styles.inlineFilterHeader}>
                   <TouchableOpacity onPress={() => setShowSchoolSelector(false)}>
                     <Text style={styles.inlineFilterBack}>← Back</Text>
                   </TouchableOpacity>
-                  <Text style={styles.inlineFilterTitle}>{t.selectSchool}</Text>
+                  <Text style={styles.inlineFilterTitle}>Select School</Text>
                   <TouchableOpacity onPress={() => setShowSchoolSelector(false)}>
                     <Text style={styles.inlineFilterDone}>Done</Text>
                   </TouchableOpacity>
                 </View>
-                
-                <ScrollView 
-                  style={styles.inlineFilterContent} 
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={{ flexGrow: 1, paddingBottom: 0 }} // 移除底部内边距
-                >
+
+                <ScrollView style={styles.inlineFilterContent} showsVerticalScrollIndicator={false}>
                   {schoolOptions.map((school, index) => (
                     <TouchableOpacity
                       key={school.id}
                       style={[
                         styles.filterItem,
-                        index === schoolOptions.length - 1 && styles.filterItemLast // 最后一项使用特殊样式
+                        index === schoolOptions.length - 1 && styles.filterItemLast
                       ]}
                       onPress={() => handleSchoolToggle(school.id)}
                     >
@@ -1322,17 +918,20 @@ const handlePublish = async () => {
                   <TouchableOpacity onPress={() => setShowTypeSelector(false)}>
                     <Text style={styles.inlineFilterBack}>← Back</Text>
                   </TouchableOpacity>
-                  <Text style={styles.inlineFilterTitle}>{t.selectType}</Text>
+                  <Text style={styles.inlineFilterTitle}>Select Type</Text>
                   <TouchableOpacity onPress={() => setShowTypeSelector(false)}>
                     <Text style={styles.inlineFilterDone}>Done</Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 <ScrollView style={styles.inlineFilterContent} showsVerticalScrollIndicator={false}>
-                  {typeOptions.map((type) => (
+                  {typeOptions.map((type, index) => (
                     <TouchableOpacity
                       key={type.id}
-                      style={styles.filterItem}
+                      style={[
+                        styles.filterItem,
+                        index === typeOptions.length - 1 && styles.filterItemLast
+                      ]}
                       onPress={() => handleTypeToggle(type.id)}
                     >
                       <View style={styles.filterItemContent}>
@@ -1353,137 +952,148 @@ const handlePublish = async () => {
                   ))}
                 </ScrollView>
               </View>
+            ) : showMajorSelector ? (
+              renderMajorSelector()
             ) : (
               <View style={styles.modalContent}>
-                {/* 主过滤器内容保持不变 */}
-                <View style={styles.filtersSection}>
-                  <Text style={styles.filtersTitle}>{t.filters}</Text>
-                  
-                  {/* School Filter */}
-                  <TouchableOpacity 
-                    style={styles.filterRow}
-                    onPress={() => setShowSchoolSelector(true)}
-                  >
-                    <Text style={styles.filterLabel}>{t.school}</Text>
-                    <Text style={styles.filterValue} numberOfLines={1}>
-                      {getSelectedSchoolsText()}
-                    </Text>
-                    <View style={styles.filterBadge}>
-                      <Text style={styles.filterBadgeText}>{selectedSchools.length}</Text>
-                    </View>
-                    <DownArrowIcon />
-                  </TouchableOpacity>
+                <ScrollView 
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  <View style={styles.filtersSection}>
+                    <Text style={styles.filtersTitle}>Filters</Text>
 
-                  {/* Type Filter */}
-                  <TouchableOpacity 
-                    style={styles.filterRow}
-                    onPress={() => setShowTypeSelector(true)}
-                  >
-                    <Text style={styles.filterLabel}>{t.type}</Text>
-                    <Text style={styles.filterValue} numberOfLines={1}>
-                      {getSelectedTypesText()}
-                    </Text>
-                    <View style={styles.filterBadge}>
-                      <Text style={styles.filterBadgeText}>{selectedTypes.length}</Text>
-                    </View>
-                    <DownArrowIcon />
-                  </TouchableOpacity>
-
-                  {/* 其他过滤器选项... */}
-                  <View style={styles.filterRow}>
-                    <Text style={[styles.filterLabel, {flex: 1}]}>{t.major}</Text>
-                    <Image
-                      source={{uri: "https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/328788e6-61f5-4768-8170-7d6837e1868f"}}
-                      resizeMode="stretch"
-                      style={styles.filterArrowIcon}
-                    />
-                  </View>
-
-                  <View style={styles.filterRow}>
-                    <Text style={[styles.filterLabel, {flex: 1}]}>{t.institution}</Text>
-                    <Image
-                      source={{uri: "https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/4c08ce9c-88b1-4262-838e-52a1c1fa445c"}}
-                      resizeMode="stretch"
-                      style={styles.filterArrowIcon}
-                    />
-                  </View>
-
-                  <View style={[styles.filterRow, {marginBottom: 0}]}>
-                    <Text style={[styles.filterLabel, {marginRight: 74}]}>......</Text>
-                    <Text style={[styles.filterValue, {flex: 1}]}>......</Text>
-                    <Image
-                      source={{uri: "https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/93969eb3-5674-4700-b7a1-6c1c2e912367"}}
-                      resizeMode="stretch"
-                      style={styles.filterArrowIcon}
-                    />
-                  </View>
-                </View>
-
-                {/* Target Viewer Number Section */}
-                <View style={styles.targetViewerSection}>
-                  <Text style={styles.sectionTitle}>{t.targetViewerNumber}</Text>
-                  <View style={styles.targetViewerContent}>
-                    <TextInput
-                      style={styles.targetNumberInput}
-                      value={targetViewers.toString()}
-                      onChangeText={handleViewersChange}
-                      keyboardType="numeric"
-                      textAlign="center"
-                    />
-                    <View style={styles.recommendedContainer}>
-                      <Text style={styles.recommendedText}>{t.recommended}</Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Target Reading Time Section */}
-                <View style={styles.readingTimeSection}>
-                  <Text style={styles.sectionTitle}>{t.targetReadingTime}</Text>
-                  <View style={styles.readingTimeContainer}>
-                    <TextInput
-                      style={styles.targetNumberInput}
-                      value={targetReadingTime.toString()}
-                      onChangeText={handleReadingTimeChange}
-                      keyboardType="numeric"
-                      textAlign="center"
-                    />
-                    <Text style={styles.timeUnit}>s</Text>
-                  </View>
-                  
-                  {/* Energy Cost */}
-                  <View style={styles.energyCostContainer}>
-                    <Text style={styles.energyCostLabel}>{t.energyCost}</Text>
-                    <View style={styles.energyCostRow}>
-                      <View style={styles.energyBadge}>
-                        <LightningIcon size={20} color="#FFFFFF" />
+                    <TouchableOpacity
+                      style={styles.filterRow}
+                      onPress={() => setShowSchoolSelector(true)}
+                    >
+                      <Text style={styles.filterLabel}>School</Text>
+                      <Text style={styles.filterValue} numberOfLines={1}>
+                        {getSelectedSchoolsText()}
+                      </Text>
+                      <View style={styles.filterBadge}>
+                        <Text style={styles.filterBadgeText}>{selectedSchools.length}</Text>
                       </View>
-                      <Text style={styles.energyCostValue}>{calculateEnergyCost()}</Text>
+                      <DownArrowIcon />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.filterRow}
+                      onPress={() => setShowTypeSelector(true)}
+                    >
+                      <Text style={styles.filterLabel}>Type</Text>
+                      <Text style={styles.filterValue} numberOfLines={1}>
+                        {getSelectedTypesText()}
+                      </Text>
+                      <View style={styles.filterBadge}>
+                        <Text style={styles.filterBadgeText}>{selectedTypes.length}</Text>
+                      </View>
+                      <DownArrowIcon />
+                    </TouchableOpacity>
+                      
+                    <TouchableOpacity
+                      style={styles.filterRow}
+                      onPress={() => setShowMajorSelector(true)}
+                    >
+                      <Text style={styles.filterLabel}>Major</Text>
+                      <Text style={styles.filterValue} numberOfLines={1}>
+                        {getSelectedMajorsText() || 'Select Major'}
+                      </Text>
+                      {selectedMajors.length > 0 && (
+                        <View style={styles.filterBadge}>
+                          <Text style={styles.filterBadgeText}>{selectedMajors.length}</Text>
+                        </View>
+                      )}
+                      <DownArrowIcon />
+                    </TouchableOpacity>
+
+                    <View style={styles.filterRow}>
+                      <Text style={styles.filterLabel}>Institution</Text>
+                      <Text style={styles.filterValue}>......</Text>
+                      <DownArrowIcon />
+                    </View>
+
+                    <View style={[styles.filterRow, { marginBottom: 0 }]}>
+                      <Text style={styles.filterLabel}>......</Text>
+                      <Text style={styles.filterValue}>......</Text>
+                      <DownArrowIcon />
                     </View>
                   </View>
-                </View>
 
-                {/* Bottom Action Buttons */}
-                <View style={styles.modalActions}>
+                  {/* Target Viewer Number Section */}
+                  <View style={styles.targetViewerSection}>
+                    <Text style={styles.sectionTitle}>Target Viewer Number</Text>
+                    <View style={styles.targetViewerContent}>
+                      <TextInput
+                        style={styles.targetNumberInput}
+                        value={targetViewers.toString()}
+                        onChangeText={(text) => {
+                          const num = parseInt(text);
+                          if (!isNaN(num) && num > 0) {
+                            setTargetViewers(num);
+                          } else if (text === '') {
+                            setTargetViewers(0);
+                          }
+                        }}
+                        keyboardType="numeric"
+                        placeholder="100"
+                        returnKeyType="done"
+                        onSubmitEditing={() => contentInputRef.current?.blur()}
+                      />
+                      <Text style={styles.recommendedText}>
+                        Recommended: {calculateRecommendedViewers().min}-{calculateRecommendedViewers().max}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Target Reading Time Section */}
+                  <View style={styles.readingTimeSection}>
+                    <Text style={styles.sectionTitle}>Target Reading Time Length Per Viewer</Text>
+                    <View style={styles.readingTimeInputContainer}>
+                      <TextInput
+                        style={styles.targetNumberInput}
+                        value={targetReadingTime.toString()}
+                        onChangeText={(text) => {
+                          const num = parseInt(text);
+                          if (!isNaN(num) && num > 0) {
+                            setTargetReadingTime(num);
+                          } else if (text === '') {
+                            setTargetReadingTime(0);
+                          }
+                        }}
+                        keyboardType="numeric"
+                        placeholder="30"
+                        returnKeyType="done"
+                        onSubmitEditing={() => contentInputRef.current?.blur()}
+                      />
+                      <Text style={styles.timeUnit}>s</Text>
+                    </View>
+                    
+                    {/* Energy Cost */}
+                    <View style={styles.energyCostContainer}>
+                      <Text style={styles.energyCostLabel}>Energy Cost:</Text>
+                      <View style={styles.energyCostRow}>
+                        <View style={styles.energyCostBadge}>
+                          <LightningIcon size={20} color="#FFFFFF" />
+                        </View>
+                        <Text style={styles.energyCostValue}>{calculateEnergyCost()}</Text>
+                      </View>
+                    </View>
+                  </View>
+                </ScrollView>
+
+                {/* Bottom Action Buttons - 只保留两个按钮 */}
+                <View style={styles.modalActionsTwo}>
                   <TouchableOpacity 
-                    style={[styles.modalButton, styles.cancelModalButton]}
-                    onPress={() => setShowTargetedFilter(false)}
+                    style={[styles.modalButtonHalf, styles.cancelModalButton]}
+                    onPress={() => setShowTargetFilter(false)}
                   >
-                    <Text style={styles.cancelModalButtonText}>{t.cancel}</Text>
+                    <Text style={styles.cancelModalButtonText}>Cancel</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
-                    style={[styles.modalButton, styles.deleteModalButton]}
-                    onPress={() => {
-                      setIsTargetedMode(false);
-                      setShowTargetedFilter(false);
-                    }}
-                  >
-                    <Text style={styles.deleteModalButtonText}>{t.delete}</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={[styles.modalButton, styles.applyModalButton]}
-                    onPress={handleApplyFilter}
+                    style={styles.modalButtonHalf}
+                    onPress={() => setShowTargetFilter(false)}
                   >
                     <LinearGradient
                       colors={['#FFD700', '#FF9317']}
@@ -1491,197 +1101,160 @@ const handlePublish = async () => {
                       end={{ x: 1, y: 0 }}
                       style={styles.gradientApplyButton}
                     >
-                      <Text style={styles.applyModalButtonText}>{t.apply}</Text>
+                      <Text style={styles.applyModalButtonText}>Apply</Text>
                     </LinearGradient>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
-      {/* 删除独立的学校和类型选择器 */}
-      {/* {renderSchoolSelector()} */}
-      {/* {renderTypeSelector()} */}
-    </View>
+      {/* Home Indicator */}
+      <View style={styles.homeIndicatorContainer}>
+        <View style={styles.homeIndicator} />
+      </View>
+    </SafeAreaView>
   );
 }
-
-
-// ...existing code...
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  fixedHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderColor: '#ACB1C633',
-    borderBottomWidth: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    zIndex: 1000,
-  },
-  contentContainer: {
-    flex: 1,
-  },
   scrollView: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-  },
-  scrollContent: {
-    flex: 1,
-  },
-  scrollContentContainer: {
-    flexGrow: 1,
-  },
-  headerLeft: {
-    minWidth: 70,
-    alignItems: 'flex-start',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 5,
+    elevation: 5,
   },
   headerTitle: {
     color: '#475569',
     fontSize: 18,
     fontWeight: 'bold',
-    textAlign: 'center',
-    flex: 1,
   },
-  headerRight: {
-    minWidth: 70,
-    alignItems: 'flex-end',
-  },
-  button: {
-    borderRadius: 25,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+  energyBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 36,
+    backgroundColor: '#FFD700',
+    borderRadius: 5,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
   },
-  cancelButton: {
-    backgroundColor: '#F3F4F6',
-    minWidth: 65,
-  },
-  sendButton: {
-    backgroundColor: '#0A66C2',
-    minWidth: 55,
-  },
-  cancelButtonText: {
-    color: '#6B7280',
+  energyBadgeText: {
+    color: '#475569',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    marginLeft: 2,
   },
-  sendButtonText: {
-    color: '#FFFFFF',
+  content: {
+    paddingHorizontal: 20,
+  },
+  inputSection: {
+    paddingVertical: 10,
+    paddingLeft: 10,
+  },
+  inputLabel: {
+    color: '#ACB1C6',
     fontSize: 14,
-    fontWeight: '600',
-  },
-  inputContainer: {
-    marginTop: 20,
-    marginHorizontal: 20,
-    marginBottom: 15,
+    fontWeight: 'bold',
   },
   titleInput: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    paddingVertical: 15,
-    paddingHorizontal: 0,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E5EA',
-    marginVertical: 10,
-  },
-  contentInput: {
     fontSize: 16,
     color: '#1F2937',
-    paddingVertical: 15,
+    fontWeight: '600', // 添加字体粗细
+    paddingVertical: 8,
     paddingHorizontal: 0,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
+  },
+  contentInput: {
+    fontSize: 15, // 稍微增大字号
+    color: '#1F2937', // 改为更深的颜色
+    fontWeight: '500', // 添加字体粗细
+    paddingLeft: 10,
+    paddingTop: 10,
     minHeight: 120,
-    marginBottom: 20,
+    textAlignVertical: 'top',
   },
   expandedContentInput: {
     minHeight: 240,
   },
-  targetedInput: {
-    backgroundColor: '#FFF8F0',
-    borderColor: '#FF9317',
-    borderWidth: 2,
-    borderRadius: 8,
-    paddingHorizontal: 15,
+  expandButtonContainer: {
+    alignItems: 'flex-end',
+    paddingRight: 8,
+    marginBottom: 20,
   },
-  actionButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 8,
-  },
-  leftButtons: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  actionButton: {
+  expandButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ACB1C633',
+    backgroundColor: '#F1F5F9',
     borderRadius: 25,
-    padding: 8,
-    marginRight: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
   },
-  actionButtonActive: {
-    backgroundColor: '#FF9317',
-  },
-  actionButtonText: {
+  expandButtonText: {
     color: '#ACB1C6',
     fontSize: 12,
     marginLeft: 4,
   },
-  actionButtonTextActive: {
-    color: '#FFFFFF',
+  imageSection: {
+    paddingHorizontal: 30,
+    marginBottom: 20,
+  },
+  addImageButton: {
+    width: 100,
+    height: 100,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8F0',
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addImagePlus: {
+    position: 'relative',
+    width: 40,
+    height: 40,
+  },
+  addImagePlusH: {
+    position: 'absolute',
+    width: 40,
+    height: 2,
+    backgroundColor: '#CBD5E1',
+    top: 19,
+  },
+  addImagePlusV: {
+    position: 'absolute',
+    height: 40,
+    width: 2,
+    backgroundColor: '#CBD5E1',
+    left: 19,
   },
   imageGridContainer: {
-    marginHorizontal: 20,
-    marginBottom: 15,
-  },
-  imageRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
+    flexWrap: 'wrap',
   },
   imageContainer: {
     position: 'relative',
+    marginRight: 10,
+    marginBottom: 10,
   },
   uploadedImage: {
-    width: imageSize,
-    height: imageSize,
+    width: 100,
+    height: 100,
     borderRadius: 8,
-    backgroundColor: '#F3F4F6',
-  },
-  addImageButton: {
-    width: imageSize,
-    height: imageSize,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ACB1C633',
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  emptySlot: {
-    width: imageSize,
-    height: imageSize,
   },
   deleteButton: {
     position: 'absolute',
@@ -1697,72 +1270,105 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  gradientSendButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 25,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    minWidth: 55,
-    justifyContent: 'center',
-    minHeight: 36,
-  },
-  gradientSendIcon: {
-    width: 16,
-    height: 16,
-    marginRight: 4,
-  },
-  gradientSendText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  targetedBadge: {
-    backgroundColor: '#FF9317',
-    borderRadius: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    minWidth: 32,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  targetedBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginLeft: 2,
-  },
-  targetedMessageContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#ACB1C633",
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    padding: 10,
-    marginBottom: 15,
+  divider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
     marginHorizontal: 20,
+    marginBottom: 15,
   },
-  targetedMessageContent: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 12,
+  targetGroupButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 20,
   },
-  targetedMessageText: {
-    color: "#475569",
-    fontSize: 14,
-    marginVertical: 5,
-    flex: 1,
-    marginLeft: 3,
+  targetGroupLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  filterIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  targetGroupText: {
+    color: '#475569',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  arrowRight: {
+    color: '#ACB1C6',
+    fontSize: 20,
+  },
+  balanceSection: {
+    paddingHorizontal: 40,
+    marginBottom: 30,
+  },
+  balanceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  balanceLabel: {
+    color: '#475569',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  balanceValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  balanceValueYellow: {
+    color: '#FBBF24',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 4,
+  },
+  balanceValueGrey: {
+    color: '#94A3B8',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  publishButtonContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  publishButton: {
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 15,
+    borderRadius: 30,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  publishButtonDisabled: {
+    opacity: 0.6,
+  },
+  publishButtonText: {
+    color: '#94A3B8',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
   bottomSpacer: {
-    height: 100,
+    height: 20,
   },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
+  homeIndicatorContainer: {
+    alignItems: 'center',
+    paddingBottom: 8,
+    backgroundColor: '#fff',
+  },
+  homeIndicator: {
+    width: 130,
+    height: 5,
+    backgroundColor: '#333',
+    borderRadius: 2.5,
   },
   modalOverlay: {
     flex: 1,
@@ -1771,210 +1377,92 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContentWrapper: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     overflow: 'hidden',
     maxWidth: '90%',
     width: 350,
+    maxHeight: '80%',
   },
   modalContent: {
     paddingTop: 20,
     paddingBottom: 20,
-    marginHorizontal: 20,
   },
   filtersSection: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#ACB1C633",
-    borderBottomWidth: 1,
-    paddingBottom: 15,
-    marginBottom: 15,
-    marginHorizontal: 15,
+    paddingHorizontal: 20,
+    marginBottom: 20,
   },
   filtersTitle: {
-    color: "#ACB1C6",
+    color: '#ACB1C6',
     fontSize: 14,
     marginBottom: 20,
-    marginLeft: 10,
   },
   filterRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 20,
-    marginHorizontal: 10,
   },
   filterLabel: {
-    color: "#ACB1C6",
+    color: '#ACB1C6',
     fontSize: 14,
     minWidth: 60,
     marginRight: 10,
   },
   filterValue: {
-    color: "#475569",
+    color: '#475569',
     fontSize: 14,
     flex: 1,
     marginRight: 10,
   },
   filterBadge: {
-    backgroundColor: "#0A66C2",
+    backgroundColor: '#0A66C2',
     borderRadius: 5,
     paddingVertical: 2,
     paddingHorizontal: 6,
     marginRight: 8,
   },
   filterBadgeText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: 'bold',
-  },
-  filterArrowIcon: {
-    width: 15,
-    height: 15,
-  },
-  targetViewerSection: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#ACB1C633",
-    borderBottomWidth: 1,
-    paddingBottom: 15,
-    marginBottom: 15,
-    marginHorizontal: 15,
-  },
-  sectionTitle: {
-    color: "#ACB1C6",
-    fontSize: 14,
-    marginBottom: 15,
-    marginLeft: 10,
-  },
-  targetViewerContent: {
-    marginHorizontal: 10,
-  },
-  targetNumberInput: {
-    color: "#0A66C2",
-    fontSize: 34,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 5,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  recommendedContainer: {
-    alignItems: "flex-end",
-  },
-  recommendedText: {
-    color: "#ACB1C6",
-    fontSize: 12,
-    textAlign: "right",
-    marginRight: 3,
-  },
-  readingTimeSection: {
-    marginHorizontal: 15,
-  },
-  readingTimeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 15,
-  },
-  timeUnit: {
-    color: "#0A66C2",
-    fontSize: 34,
-    fontWeight: "bold",
-    marginLeft: 5,
-  },
-  energyCostContainer: {
-    alignItems: "flex-end",
-    marginTop: 15,
-  },
-  energyCostLabel: {
-    color: "#475569",
-    fontSize: 14,
-    marginBottom: 8,
-    marginRight: 28,
-  },
-  energyCostRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 28,
-  },
-  energyBadge: {
-    backgroundColor: '#FFD700',
-    borderRadius: 16,
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-    shadowColor: '#FFD700',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  energyCostValue: {
-    color: '#FF9317',
-    fontSize: 24,
-    fontWeight: "bold",
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,
-    paddingHorizontal: 5,
+    paddingHorizontal: 20,
   },
-  modalButton: {
+  cancelButton: {
     flex: 1,
+    backgroundColor: '#F3F4F6',
     borderRadius: 25,
     paddingVertical: 12,
-    marginHorizontal: 5,
+    marginRight: 10,
     alignItems: 'center',
-    justifyContent: 'center',
-    height: 48,
   },
-  cancelModalButton: {
-    backgroundColor: '#F3F4F6',
-  },
-  deleteModalButton: {
-    backgroundColor: '#FF4D4D',
-  },
-  applyModalButton: {
-    backgroundColor: 'transparent',
-    overflow: 'hidden',
-  },
-  gradientApplyButton: {
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 48,
-    width: '100%',
-  },
-  cancelModalButtonText: {
+  cancelButtonText: {
     color: '#6B7280',
     fontSize: 14,
     fontWeight: '600',
   },
-  deleteModalButtonText: {
+  applyButton: {
+    flex: 1,
+    borderRadius: 25,
+    overflow: 'hidden',
+  },
+  applyButtonGradient: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  applyButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
   },
-  applyModalButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  filterScreenContainer: {
+  inlineFilterContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  filterHeader: {
+  inlineFilterHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1982,22 +1470,24 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5EA',
-    backgroundColor: '#FFFFFF',
   },
-  filterHeaderButton: {
+  inlineFilterBack: {
     color: '#0A66C2',
     fontSize: 16,
     fontWeight: '600',
   },
-  filterHeaderTitle: {
+  inlineFilterTitle: {
     color: '#1F2937',
     fontSize: 18,
     fontWeight: 'bold',
   },
-  filterContent: {
+  inlineFilterDone: {
+    color: '#0A66C2',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  inlineFilterContent: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 0,
   },
   filterItem: {
     paddingHorizontal: 20,
@@ -2006,10 +1496,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F1F5F9',
   },
   filterItemLast: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
     borderBottomWidth: 0,
-    paddingBottom: 20,
   },
   filterItemContent: {
     flexDirection: 'row',
@@ -2048,269 +1535,113 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
-  tagModalBg: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  tagModalContainer: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-    overflow: 'hidden',
-  },
-  tagModalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F1F1',
-  },
-  tagModalTitle: {
-    color: '#1F2937',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  tagModalClose: {
-    color: '#666',
-    fontSize: 28,
-    fontWeight: '300',
-  },
-  tagModalContent: {
-    padding: 20,
-    flex: 1,
-  },
-  tagSearchInput: {
-    backgroundColor: '#F8F8F8',
-    borderRadius: 25,
+  targetViewerSection: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    fontSize: 16,
     marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-  },
-  selectedTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FF2442',
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    marginRight: 10,
-    marginBottom: 8,
-  },
-  selectedTagText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  deleteTagBtn: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 8,
-    width: 20,
-    height: 20,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  tagSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 15,
-  },
-  tagScrollView: {
-    flex: 1,
-  },
-  tagGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingBottom: 20,
-  },
-  tagItem: {
-    backgroundColor: '#F8F8F8',
-    borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginRight: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-  },
-  tagItemSelected: {
-    backgroundColor: '#FF2442',
-    borderColor: '#FF2442',
-  },
-  tagItemDisabled: {
-    opacity: 0.4,
-    backgroundColor: '#F0F0F0',
-  },
-  tagItemText: {
-    color: '#333',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  tagItemTextSelected: {
-    color: '#FFFFFF',
-  },
-  atModalBg: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    justifyContent: 'flex-end',
-  },
-  atModalContainer: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 18,
-    maxHeight: '70%',
-  },
-  atModalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  atModalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  atModalClose: {
-    color: '#ACB1C6',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  atSearchInput: {
-    backgroundColor: '#F6F6FA',
-    borderRadius: 16,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-  },
-  atUserList: {
-    flex: 1,
-  },
-  // 修复：完整的atUserRow样式定义
-  atUserRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
+    paddingBottom: 20,
   },
-  // 新增：缺少的atUserAvatar样式
-  atUserAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  atUserInfo: {
-    flex: 1,
-  },
-  atUserName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 2,
-  },
-  atUserUsername: {
+  sectionTitle: {
+    color: '#ACB1C6',
     fontSize: 14,
-    color: '#6B7280',
-  },
-  atUserSelected:
- {
-    color: '#FF9317',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  inlineFilterContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    maxHeight: '90%',
-  },
-  inlineFilterHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-    backgroundColor: '#FFFFFF',
-  },
-  inlineFilterBack: {
-    color: '#0A66C2',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  inlineFilterTitle: {
-    color: '#1F2937',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  inlineFilterDone: {
-    color: '#0A66C2',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  inlineFilterContent: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 0,
-  },
-  selectedTagsPreview: {
-    marginHorizontal: 20,
     marginBottom: 15,
   },
-  selectedTagsTitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-    fontWeight: '500',
+  targetViewerContent: {
+    alignItems: 'center',
   },
-  selectedTagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  targetNumberInput: {
+    color: '#0A66C2',
+    fontSize: 48,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    minWidth: 150,
+    paddingVertical: 10,
   },
-  selectedTagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  recommendedText: {
+    color: '#ACB1C6',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 5,
   },
-  selectedTagChip: {
+  readingTimeSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  readingTimeInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E3F2FD',
-    borderRadius: 16,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginRight: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#4A90E2',
+    justifyContent: 'center',
+    marginBottom: 20,
   },
-  selectedTagChipText: {
-    color: '#4A90E2',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  selectedTagRemove: {
-    color: '#4A90E2',
-    fontSize: 16,
+  timeUnit: {
+    color: '#0A66C2',
+    fontSize: 48,
     fontWeight: 'bold',
-    marginLeft: 6,
-    width: 16,
-    height: 16,
-    textAlign: 'center',
-    lineHeight: 14,
+    marginLeft: 5,
+  },
+  energyCostContainer: {
+    alignItems: 'flex-end',
+    paddingRight: 10,
+  },
+  energyCostLabel: {
+    color: '#475569',
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  energyCostRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  energyCostBadge: {
+    backgroundColor: '#FFD700',
+    borderRadius: 20,
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  energyCostValue: {
+    color: '#FF9317',
+    fontSize: 32,
+    fontWeight: 'bold',
+  },
+  modalActionsTwo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    gap: 10,
+  },
+  modalButtonHalf: {
+    flex: 1,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelModalButton: {
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 7, // 只给 Cancel 按钮减少内边距
+  },
+  cancelModalButtonText: {
+    color: '#6B7280',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  gradientApplyButton: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 25,
+    width: '100%',
+  },
+  applyModalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

@@ -187,7 +187,10 @@ export default function Profile() {
               style={styles.editIconButton}
               onPress={() => router.push('/edit-profile')}
             >
-              <Text style={styles.editIcon}>✏️</Text>
+              <Image 
+                source={require('@/assets/images/edit_profile.png')}
+                style={styles.editIconImage}
+  />
             </TouchableOpacity>
           </TouchableOpacity>
 
@@ -478,6 +481,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#94A3B8',
     marginTop: 4,
+  },
+  editIconImage: {
+  width: 16,
+  height: 16,
+  tintColor: '#4A90E2', // This will color the icon if it's a simple shape
   },
   // Menu styles
   menuSection: {

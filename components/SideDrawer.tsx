@@ -1,15 +1,15 @@
 import { router } from 'expo-router';
 import React from 'react';
 import {
-    Animated,
-    Dimensions,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Animated,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -29,10 +29,12 @@ interface SideDrawerProps {
 export default function SideDrawer({ isOpen, onClose, userProfile }: SideDrawerProps) {
   const [slideAnim] = React.useState(new Animated.Value(-DRAWER_WIDTH));
   const [shouldRender, setShouldRender] = React.useState(isOpen);
+  const [isNavigating, setIsNavigating] = React.useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
       setShouldRender(true);
+      setIsNavigating(false); // 重置导航状态
     }
     
     Animated.timing(slideAnim, {
@@ -47,6 +49,9 @@ export default function SideDrawer({ isOpen, onClose, userProfile }: SideDrawerP
   }, [isOpen]);
 
   const handleMenuPress = (route: string) => {
+    if (isNavigating) return; // 如果正在导航，直接返回
+    
+    setIsNavigating(true);
     onClose();
     setTimeout(() => {
       router.push(route as any);
@@ -54,6 +59,9 @@ export default function SideDrawer({ isOpen, onClose, userProfile }: SideDrawerP
   };
 
   const handleLogout = () => {
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
     onClose();
     setTimeout(() => {
       router.push('/login');
@@ -154,6 +162,21 @@ export default function SideDrawer({ isOpen, onClose, userProfile }: SideDrawerP
                   />
                 </View>
                 <Text style={styles.menuText}>发送记录</Text>
+              </View>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+
+            {/* 精力兑换 */}
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => handleMenuPress('/energy-exchange')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={styles.menuIconContainer}>
+                  <Text style={styles.energyEmoji}>⚡</Text>
+                </View>
+                <Text style={styles.menuText}>精力兑换</Text>
               </View>
               <Text style={styles.menuArrow}>›</Text>
             </TouchableOpacity>
@@ -381,10 +404,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#CBD5E1',
   },
+  
   divider: {
     height: 1,
     backgroundColor: '#F1F5F9',
     marginVertical: 12,
     marginHorizontal: 4,
+  },
+  energyEmoji: {
+    fontSize: 24,
   },
 });

@@ -1,4 +1,5 @@
 import SideDrawer from '@/components/SideDrawer';
+import SwipeableRow from '@/components/SwipeableRow';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -12,6 +13,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Filter图标组件 - 使用 emoji
 const FilterIcon = () => (
@@ -275,74 +277,127 @@ export default function Index() {
       .reduce((total, post) => total + (post.energy || 0), 0);
   };
 
+  // 新增：删除帖子
+  const handleDeletePost = (item: Post) => {
+    Alert.alert(
+      '确认删除',
+      `确定要删除 "${item.title}" 吗？`,
+      [
+        { text: '取消', style: 'cancel' },
+        { 
+          text: '删除', 
+          style: 'destructive',
+          onPress: () => {
+            setPosts(posts.filter(post => post.postid !== item.postid));
+          }
+        }
+      ]
+    );
+  };
+
+  // 新增：收藏/取消收藏帖子
+  const handleBookmarkPost = (item: Post) => {
+    setPosts(posts.map(post => 
+      post.postid === item.postid 
+        ? { 
+            ...post, 
+            isBookmarked: !post.isBookmarked, 
+            bookmarks: post.isBookmarked ? post.bookmarks - 1 : post.bookmarks + 1 
+          }
+        : post
+    ));
+    
+    // 显示提示
+    Alert.alert(
+      '成功',
+      item.isBookmarked ? '已取消收藏' : '已添加到收藏',
+      [{ text: '确定' }]
+    );
+  };
+
   const renderPost = ({ item }: { item: Post }) => (
-    <TouchableOpacity
-      style={styles.postCard}
-      onPress={() => handlePostPress(item)}
+    <SwipeableRow
+      item={item}
+      onDelete={handleDeletePost}
+      onBookmark={handleBookmarkPost}
     >
-      <View style={styles.postHeader}>
-        <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarText}>{item.cover_name[0]}</Text>
+      <TouchableOpacity
+        style={styles.postCardContent}
+        onPress={() => handlePostPress(item)}
+        activeOpacity={0.9}
+      >
+        <View style={styles.postHeader}>
+          <View style={styles.avatarPlaceholder}>
+            <Text style={styles.avatarText}>{item.cover_name[0]}</Text>
+          </View>
+          <View style={styles.postHeaderInfo}>
+            <Text style={styles.authorName}>{item.cover_name}</Text>
+            <Text style={styles.postTime}>{new Date(item.createtime).toLocaleDateString()}</Text>
+          </View>
+          {item.isTargeted && item.energy && (
+            <View style={styles.energyBadge}>
+              <Image
+                source={require('@/assets/images/energy.png')}
+                style={styles.energyIcon}
+              />
+              <Text style={styles.energyText}>{item.energy}</Text>
+            </View>
+          )}
         </View>
-        <View style={styles.postHeaderInfo}>
-          <Text style={styles.authorName}>{item.cover_name}</Text>
-          <Text style={styles.postTime}>{new Date(item.createtime).toLocaleDateString()}</Text>
+
+        <Text style={styles.postTitle}>{item.title}</Text>
+        <Text style={styles.postContent} numberOfLines={3}>{item.content}</Text>
+
+        {item.image_url && (
+          <Image source={{ uri: item.image_url }} style={styles.postImage} />
+        )}
+
+        <View style={styles.postActions}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleLike(item.postid);
+            }}
+          >
+            <LikeIcon filled={item.isLiked} />
+            <Text style={styles.actionText}>{item.like}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              handlePostPress(item);
+            }}
+          >
+            <CommentIcon />
+            <Text style={styles.actionText}>{item.comments}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleBookmark(item.postid);
+            }}
+          >
+            <BookmarkIcon filled={item.isBookmarked} />
+            <Text style={styles.actionText}>{item.bookmarks}</Text>
+          </TouchableOpacity>
         </View>
-        {/* 新增：显示 energy 徽章（仅 targeted posts） */}
-        {item.isTargeted && item.energy && (
-          <View style={styles.energyBadge}>
-            <Image
-              source={require('@/assets/images/energy.png')}
-              style={styles.energyIcon}
-            />
-            <Text style={styles.energyText}>{item.energy}</Text>
+
+        {item.tags && (
+          <View style={styles.tagsContainer}>
+            {item.tags.split(',').map((tag, index) => (
+              <View key={index} style={styles.tag}>
+                <Text style={styles.tagText}>#{tag}</Text>
+              </View>
+            ))}
           </View>
         )}
-      </View>
-
-      <Text style={styles.postTitle}>{item.title}</Text>
-      <Text style={styles.postContent} numberOfLines={3}>{item.content}</Text>
-
-      {item.image_url && (
-        <Image source={{ uri: item.image_url }} style={styles.postImage} />
-      )}
-
-      <View style={styles.postActions}>
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => handleLike(item.postid)}
-        >
-          <LikeIcon filled={item.isLiked} />
-          <Text style={styles.actionText}>{item.like}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => handlePostPress(item)}
-        >
-          <CommentIcon />
-          <Text style={styles.actionText}>{item.comments}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => handleBookmark(item.postid)}
-        >
-          <BookmarkIcon filled={item.isBookmarked} />
-          <Text style={styles.actionText}>{item.bookmarks}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {item.tags && (
-        <View style={styles.tagsContainer}>
-          {item.tags.split(',').map((tag, index) => (
-            <View key={index} style={styles.tag}>
-              <Text style={styles.tagText}>#{tag}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </SwipeableRow>
   );
 
   if (loading) {
@@ -354,80 +409,77 @@ export default function Index() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* 侧边栏 */}
-      <SideDrawer
-        isOpen={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        userProfile={userProfile}
-      />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <SideDrawer
+          isOpen={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          userProfile={userProfile}
+        />
 
-      {/* Header */}
-      <View style={styles.header}>
-        {/* 左上角 Profile Icon - 改为打开侧边栏 */}
-        <TouchableOpacity 
-          style={styles.profileIconButton}
-          onPress={() => setDrawerOpen(true)}
-        >
-          <Image
-            source={require('@/assets/images/navigation.png')}
-            style={styles.navigationIcon}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>CampusLink</Text>
-        
-        <View style={styles.headerActions}>
-          {/* 新增：总能量显示 */}
-          <View style={styles.totalEnergyContainer}>
-            <Image
-              source={require('@/assets/images/energy.png')}
-              style={styles.totalEnergyIcon}
-            />
-            <Text style={styles.totalEnergyText}>{getTotalEnergy()}</Text>
-          </View>
-          <TouchableOpacity style={styles.iconButton}>
-            <FilterIcon />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Posts List */}
-      <FlatList
-        data={getFilteredPosts()}
-        renderItem={renderPost}
-        keyExtractor={(item) => item.postid}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        contentContainerStyle={styles.listContent}
-      />
-
-      {/* 新增：左下角切换按钮 */}
-      <View style={styles.tabBar}>
-        {(['all', 'unread', 'read'] as const).map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.tabButton, selectedTab === tab && styles.tabActive]}
-            onPress={() => setSelectedTab(tab)}
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.profileIconButton}
+            onPress={() => setDrawerOpen(true)}
           >
-            <Text style={[styles.tabText, selectedTab === tab && styles.tabTextActive]}>
-              {tab === 'all' ? '所有' : tab === 'unread' ? '未读' : '已读'}
-            </Text>
+            <Image
+              source={require('@/assets/images/navigation.png')}
+              style={styles.navigationIcon}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
-        ))}
-      </View>
 
-      {/* 右下角发送按钮 - 使用新设计 */}
-      <TouchableOpacity 
-        style={styles.floatingPostButton}
-        onPress={() => router.push('/post')}
-        activeOpacity={0.8}
-      >
-        <SendButton size={58} />
-      </TouchableOpacity>
-    </View>
+          <Text style={styles.headerTitle}>CampusLink</Text>
+          
+          <View style={styles.headerActions}>
+            {/* 总能量显示 */}
+            <View style={styles.totalEnergyContainer}>
+              <Image
+                source={require('@/assets/images/energy.png')}
+                style={styles.totalEnergyIcon}
+              />
+              <Text style={styles.totalEnergyText}>{getTotalEnergy()}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Posts List */}
+        <FlatList
+          data={getFilteredPosts()}
+          renderItem={renderPost}
+          keyExtractor={(item) => item.postid}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          contentContainerStyle={styles.listContent}
+        />
+
+        {/* 左下角切换按钮 */}
+        <View style={styles.tabBar}>
+          {(['all', 'unread', 'read'] as const).map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.tabButton, selectedTab === tab && styles.tabActive]}
+              onPress={() => setSelectedTab(tab)}
+            >
+              <Text style={[styles.tabText, selectedTab === tab && styles.tabTextActive]}>
+                {tab === 'all' ? '所有' : tab === 'unread' ? '未读' : '已读'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* 右下角发送按钮 */}
+        <TouchableOpacity 
+          style={styles.floatingPostButton}
+          onPress={() => router.push('/post')}
+          activeOpacity={0.8}
+        >
+          <SendButton size={58} />
+        </TouchableOpacity>
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -511,12 +563,10 @@ const styles = StyleSheet.create({
     paddingBottom: 100, // 为底部按钮留出空间
   },
   postCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
     marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+  },
+  postCardContent: {
+    padding: 16,
   },
   postHeader: {
     flexDirection: 'row',
