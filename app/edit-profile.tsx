@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useLayoutEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
@@ -19,8 +20,6 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 // 导入API函数
 import { getUserProfile, updateUserProfile, UserProfile } from '../services/api';
-// 导入 CommonHeader
-import CommonHeader from '../components/CommonHeader';
 
 // 香港八大院校数据
 const HK_UNIVERSITIES = [
@@ -42,13 +41,139 @@ const DEGREE_TYPES = [
   { id: 'alumni', name: 'Alumni' },
 ];
 
+const MAJOR_OPTIONS = [
+  {
+    faculty: 'Faculty of Arts',
+    majors: [
+      { id: 'anthropology', name: 'Anthropology' },
+      { id: 'bimodal-bilingual', name: 'Bimodal Bilingual Studies' },
+      { id: 'chinese-lang-lit', name: 'Chinese Language and Literature' },
+      { id: 'chinese-studies', name: 'Chinese Studies' },
+      { id: 'english', name: 'English' },
+      { id: 'fine-arts', name: 'Fine Arts' },
+      { id: 'history', name: 'History' },
+      { id: 'japanese', name: 'Japanese Studies' },
+      { id: 'linguistics', name: 'Linguistics' },
+      { id: 'music', name: 'Music' },
+      { id: 'philosophy', name: 'Philosophy' },
+      { id: 'public-history', name: 'Public History' },
+      { id: 'public-humanities', name: 'Public Humanities' },
+      { id: 'religious-studies', name: 'Religious Studies' },
+      { id: 'theology', name: 'Theology' },
+      { id: 'translation', name: 'Translation' },
+    ]
+  },
+  {
+    faculty: 'Faculty of Business',
+    majors: [
+      { id: 'global-business', name: 'Global Business Studies' },
+      { id: 'biotech-entrepreneurship', name: 'Biotechnology, Entrepreneurship and Healthcare Management' },
+      { id: 'integrated-bba', name: 'Integrated BBA Programme' },
+      { id: 'global-economics', name: 'Global Economics and Finance' },
+      { id: 'prof-accountancy', name: 'Professional Accountancy' },
+      { id: 'hospitality-realestate', name: 'Hospitality and Real Estate' },
+      { id: 'quantitative-finance', name: 'Quantitative Finance' },
+      { id: 'hotel-tourism', name: 'Hotel and Tourism Management' },
+      { id: 'insurance-finance', name: 'Insurance, Financial and Actuarial Analysis' },
+      { id: 'bba-jd', name: 'BBA(IBBA)-JD Double Degree Programme' },
+      { id: 'quant-risk', name: 'Quantitative Finance and Risk Management Science' },
+    ]
+  },
+  {
+    faculty: 'Faculty of Education',
+    majors: [
+      { id: 'chinese-lang-ed', name: 'Chinese Language Studies (BA) and Chinese Language Education (BEd)' },
+      { id: 'early-childhood', name: 'Early Childhood Education' },
+      { id: 'english-lang-ed', name: 'English Studies (BA) and English Language Education (BEd)' },
+      { id: 'exercise-science', name: 'Exercise Science and Health Education' },
+      { id: 'human-movement', name: 'Human Movement Science and Health Studies' },
+      { id: 'learning-design-tech', name: 'Learning Design and Technology' },
+      { id: 'math-education', name: 'Mathematics and Mathematics Education' },
+      { id: 'physical-ed', name: 'Physical Education, Exercise Science and Health' },
+    ]
+  },
+  {
+    faculty: 'Faculty of Engineering',
+    majors: [
+      { id: 'aerospace-earth', name: 'Aerospace Science and Earth Informatics & X Double Major Programme' },
+      { id: 'ai-systems', name: 'Artificial Intelligence: Systems and Technologies' },
+      { id: 'biomedical-eng', name: 'Biomedical Engineering' },
+      { id: 'comp-data-science', name: 'Computational Data Science' },
+      { id: 'comp-engineering', name: 'Computer Engineering' },
+      { id: 'comp-science', name: 'Computer Science' },
+      { id: 'comp-sci-eng', name: 'Computer Science and Engineering' },
+      { id: 'electronic-eng', name: 'Electronic Engineering' },
+      { id: 'energy-env-eng', name: 'Energy and Environmental Engineering' },
+      { id: 'fintech', name: 'Financial Technology' },
+      { id: 'info-engineering', name: 'Information Engineering' },
+      { id: 'materials-eng', name: 'Materials Science and Engineering' },
+      { id: 'math-info-eng', name: 'Mathematics and Information Engineering' },
+      { id: 'mech-automation', name: 'Mechanical and Automation Engineering' },
+      { id: 'systems-eng', name: 'Systems Engineering and Engineering Management' },
+    ]
+  },
+  {
+    faculty: 'Faculty of Law',
+    majors: [
+      { id: 'law', name: 'Laws' },
+      { id: 'bba-jd-law', name: 'BBA(IBBA)-JD Double Degree Programme' },
+    ]
+  },
+  {
+    faculty: 'Faculty of Medicine',
+    majors: [
+      { id: 'biomedical-sci', name: 'Biomedical Sciences' },
+      { id: 'chinese-medicine', name: 'Chinese Medicine' },
+      { id: 'community-health', name: 'Community Health Practice' },
+      { id: 'gerontology', name: 'Gerontology' },
+      { id: 'medicine', name: 'Medicine (MBChB) Programme' },
+      { id: 'medicine-gps', name: 'Medicine (MBChB) Programme Global Physician-Leadership Stream (GPS)' },
+      { id: 'nursing', name: 'Nursing' },
+      { id: 'pharmacy', name: 'Pharmacy' },
+      { id: 'public-health', name: 'Public Health' },
+    ]
+  },
+  {
+    faculty: 'Faculty of Science',
+    majors: [
+      { id: 'earth-env-sciences', name: 'Earth and Environmental Sciences' },
+      { id: 'enrichment-math', name: 'Enrichment Mathematics' },
+      { id: 'theoretical-physics', name: 'Enrichment Stream in Theoretical Physics' },
+      { id: 'natural-sciences', name: 'Natural Sciences' },
+      { id: 'risk-mgmt-science', name: 'Risk Management Science' },
+      { id: 'science', name: 'Science' },
+    ]
+  },
+  {
+    faculty: 'Faculty of Social Science',
+    majors: [
+      { id: 'architectural', name: 'Architectural Studies' },
+      { id: 'economics', name: 'Economics' },
+      { id: 'data-policy', name: 'Data Science and Policy Studies' },
+      { id: 'economics-dual', name: 'Economics (CUHK–Tsinghua University Dual Undergraduate Degree Programme)' },
+      { id: 'gender-studies', name: 'Gender Studies' },
+      { id: 'geography-resource', name: 'Geography and Resource Management' },
+      { id: 'global-comm', name: 'Global Communication' },
+      { id: 'global-studies', name: 'Global Studies' },
+      { id: 'govt-public-admin', name: 'Government and Public Administration' },
+      { id: 'journalism-comm', name: 'Journalism and Communication' },
+      { id: 'psychology', name: 'Psychology' },
+      { id: 'social-science', name: 'Social Science (Broad-based)' },
+      { id: 'social-work', name: 'Social Work' },
+      { id: 'society-sustainable', name: 'Society and Sustainable Development' },
+      { id: 'sociology', name: 'Sociology' },
+      { id: 'urban-studies', name: 'Urban Studies' },
+    ]
+  },
+];
+
 export default function EditProfileScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
-  // 用户资料状态
-  const [profile, setProfile] = useState<UserProfile>({
+  const [formData, setFormData] = useState({
     id: '',
     username: '',
     email: '',
@@ -62,17 +187,18 @@ export default function EditProfileScreen() {
     verification: '',
   });
 
-  // 编辑状态
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [isEditingIntroduction, setIsEditingIntroduction] = useState(false);
   const [showSchoolPicker, setShowSchoolPicker] = useState(false);
   const [showTypePicker, setShowTypePicker] = useState(false);
+  const [showMajorPicker, setShowMajorPicker] = useState(false);
+  const [selectedFaculty, setSelectedFaculty] = useState<string>('');
 
-  // 临时输入值
-  const [tempName, setTempName] = useState('');
-  const [tempIntroduction, setTempIntroduction] = useState('');
+  const handleChange = (field: keyof typeof formData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setHasUnsavedChanges(true);
+  };
 
-  // 加载用户资料
+  useLayoutEffect(() => {}, [hasUnsavedChanges, saving]);
+
   const loadUserProfile = async () => {
     try {
       setLoading(true);
@@ -85,20 +211,7 @@ export default function EditProfileScreen() {
         if (result.success && result.data) {
           console.log('Profile loaded successfully:', result.data);
           
-          // 调试：检查数据类型
-          console.log('Data types:', {
-            id: typeof result.data.id,
-            username: typeof result.data.username,
-            email: typeof result.data.email,
-            real_name: typeof result.data.real_name,
-            school: typeof result.data.school,
-            type: typeof result.data.type,
-            major: typeof result.data.major,
-            institution: typeof result.data.institution,
-            introduction: typeof result.data.introduction,
-          });
-          
-          setProfile({
+          setFormData({
             id: String(result.data.id || ''),
             username: String(result.data.username || ''),
             email: String(result.data.email || ''),
@@ -112,95 +225,64 @@ export default function EditProfileScreen() {
             verification: String(result.data.verification || result.data.school || ''),
           });
         } else {
-          console.log('Profile API failed, using default data:', result.message);
-          // 使用默认数据
-          setProfile({
+          setFormData({
             id: '12345678',
             username: 'Alice',
             email: 'alice@example.com',
             real_name: 'Alice Wang',
-            avatar: '', // 确保是字符串而不是 undefined
+            avatar: '',
             verification: 'CUHK',
             introduction: 'A year-3 student studying xxx in CUHK. Be interested in XXX',
             school: 'CUHK',
             type: 'Undergraduate',
-            major: '', // 确保是字符串而不是 undefined
-            institution: '', // 确保是字符串而不是 undefined
+            major: '',
+            institution: '',
           });
         }
-      } else {
-        console.log('No token found');
-        Alert.alert('Error', 'Please login first', [
-          { text: 'OK', onPress: () => router.replace('/login') }
-        ]);
       }
     } catch (error) {
       console.error('Failed to load user profile:', error);
       Alert.alert('Error', 'Failed to load profile data');
-      // 使用默认数据作为后备
-      setProfile({
-        id: '12345678',
-        username: 'Alice',
-        email: 'alice@example.com',
-        real_name: 'Alice Wang',
-        avatar: '', // 确保是字符串而不是 undefined
-        verification: 'CUHK',
-        introduction: 'A year-3 student studying xxx in CUHK. Be interested in XXX',
-        school: 'CUHK',
-        type: 'Undergraduate',
-        major: '', // 确保是字符串而不是 undefined
-        institution: '', // 确保是字符串而不是 undefined
-      });
     } finally {
       setLoading(false);
     }
   };
 
-  // 页面聚焦时加载用户资料
   useFocusEffect(
     useCallback(() => {
       loadUserProfile();
     }, [])
   );
 
-  // 保存用户资料 - 集成真实API
   const handleSave = async () => {
-    setSaving(true);
+    if (!hasUnsavedChanges) return;
     
+    setSaving(true);
     try {
       const token = await AsyncStorage.getItem('userToken');
       
       if (token) {
-        console.log('Updating user profile:', profile);
+        console.log('Updating user profile:', formData);
         
-        // 准备更新数据（只发送需要更新的字段）
         const updateData: Partial<UserProfile> = {
-          username: profile.username,
-          real_name: profile.real_name,
-          introduction: profile.introduction,
-          school: profile.school,
-          type: profile.type,
-          major: profile.major,
-          institution: profile.institution,
+          username: formData.username,
+          real_name: formData.real_name,
+          introduction: formData.introduction,
+          school: formData.school,
+          type: formData.type,
+          major: formData.major,
+          institution: formData.institution,
         };
 
         const result = await updateUserProfile(updateData, token);
 
         if (result.success) {
-          // 更新本地存储
-          await AsyncStorage.setItem('username', profile.username);
-          
-          Alert.alert('Success', 'Profile updated successfully!', [
-            {
-              text: 'OK',
-              onPress: () => router.back()
-            }
-          ]);
+          await AsyncStorage.setItem('username', formData.username);
+          setHasUnsavedChanges(false);
+          Alert.alert('Success', 'Profile updated successfully!');
         } else {
           Alert.alert('Error', result.message || 'Failed to update profile');
         }
-      } else {
-        Alert.alert('Error', 'Please login first');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -210,86 +292,88 @@ export default function EditProfileScreen() {
     }
   };
 
-  // 处理用户名编辑
-  const handleNameEdit = () => {
-    setTempName(profile.username);
-    setIsEditingName(true);
-  };
-
-  const handleNameSave = () => {
-    if (tempName.trim()) {
-      setProfile(prev => ({ ...prev, username: tempName.trim() }));
-    }
-    setIsEditingName(false);
-  };
-
-  const handleNameCancel = () => {
-    setTempName('');
-    setIsEditingName(false);
-  };
-
-  // 处理介绍编辑
-  const handleIntroductionEdit = () => {
-    setTempIntroduction(profile.introduction || '');
-    setIsEditingIntroduction(true);
-  };
-
-  const handleIntroductionSave = () => {
-    setProfile(prev => ({ ...prev, introduction: tempIntroduction }));
-    setIsEditingIntroduction(false);
-  };
-
-  const handleIntroductionCancel = () => {
-    setTempIntroduction('');
-    setIsEditingIntroduction(false);
-  };
-
-  // 处理学校选择
   const handleSchoolSelect = (school: any) => {
-    console.log('handleSchoolSelect called with:', school);
-    setProfile(prev => ({ 
-      ...prev, 
-      school: school.shortName 
-    }));
+    handleChange('school', school.shortName);
     setShowSchoolPicker(false);
   };
 
-  // 处理类型选择
   const handleTypeSelect = (type: any) => {
-    console.log('handleTypeSelect called with:', type);
-    setProfile(prev => ({ 
-      ...prev, 
-      type: type.name 
-    }));
+    handleChange('type', type.name);
     setShowTypePicker(false);
   };
 
-  // 添加返回处理函数
-  const handleBack = useCallback(() => {
-    if (saving) return; // 保存中不允许返回
-    router.back();
-  }, [saving]);
-
-  // 添加一个安全的文本渲染函数
-  const safeText = (value: any): string => {
-    if (value === null || value === undefined) {
-      return '';
-    }
-    return String(value);
+  const handleMajorSelect = (majorId: string, majorName: string) => {
+    handleChange('major', majorName);
+    setShowMajorPicker(false);
+    setSelectedFaculty('');
   };
+
+  const getMajorDisplayName = (majorValue: string): string => {
+    if (!majorValue) return 'Not specified';
+    
+    for (const facultyGroup of MAJOR_OPTIONS) {
+      const major = facultyGroup.majors.find(m => m.name === majorValue);
+      if (major) return major.name;
+    }
+    
+    for (const facultyGroup of MAJOR_OPTIONS) {
+      const major = facultyGroup.majors.find(m => m.id === majorValue);
+      if (major) return major.name;
+    }
+    
+    return majorValue;
+  };
+
+  const renderInputRow = (
+    label: string, 
+    fieldKey: keyof typeof formData, 
+    placeholder: string, 
+    multiline = false
+  ) => (
+    <View style={[styles.menuItem, multiline && { alignItems: 'flex-start' }]}>
+      <Text style={[styles.labelStyle, multiline && { marginTop: 12 }]}>{label}</Text>
+      <TextInput
+        style={[
+          styles.inputStyle, 
+          multiline && styles.multilineInput
+        ]}
+        value={formData[fieldKey]}
+        onChangeText={(text) => handleChange(fieldKey, text)}
+        placeholder={placeholder}
+        placeholderTextColor="#CBD5E1"
+        multiline={multiline}
+        clearButtonMode="while-editing"
+        maxLength={multiline ? 200 : 50}
+      />
+    </View>
+  );
+
+  const renderSelectorRow = (
+    label: string, 
+    value: string, 
+    onPress: () => void,
+    displayValue?: string
+  ) => (
+    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+      <Text style={styles.labelStyle}>{label}</Text>
+      <Text style={[styles.valueStyle, !value && { color: '#CBD5E1' }]}>
+        {displayValue || value || 'Not specified'}
+      </Text>
+      <Text style={styles.arrow}>›</Text>
+    </TouchableOpacity>
+  );
 
   if (loading) {
     return (
       <SafeAreaProvider>
-        <Stack.Screen options={{ headerShown: false }} />
+        <Stack.Screen options={{ 
+          headerShown: true,
+          title: 'Profile',
+          headerBackTitle: 'Back'
+        }} />
         <SafeAreaView style={styles.container} edges={['top']}>
-          <CommonHeader 
-            onBack={handleBack}
-            title="Profile"
-            showMore={false}
-          />
-          
           <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4A90E2" />
             <Text style={styles.loadingText}>Loading profile...</Text>
           </View>
         </SafeAreaView>
@@ -299,288 +383,259 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaProvider>
-      <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={styles.container} edges={['top']}> {/* 改回edges={['top']} */}
-        {/* Header */}
-        <View style={styles.headerContainer}>
-          <CommonHeader 
-            onBack={handleBack}
-            title="Profile"
-            showMore={false}
-          />
-        </View>
-
-        {/* LinearGradient Background */}
-        <LinearGradient
-          colors={['#F8F9FA', '#FFFFFF']}
-          style={styles.gradientBackground}
+      <Stack.Screen 
+        options={{
+          headerShown: true,
+          title: 'Edit Profile',
+          headerBackTitle: 'Back',
+          headerStyle: { backgroundColor: '#F8F9FA' },
+          headerShadowVisible: false,
+          headerRight: () => (
+            <TouchableOpacity 
+              onPress={handleSave} 
+              disabled={!hasUnsavedChanges || saving}
+              style={[
+                styles.headerButton,
+                (!hasUnsavedChanges || saving) && styles.headerButtonDisabled
+              ]}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#0A66C2" />
+              ) : (
+                <Text style={[
+                  styles.headerButtonText,
+                  hasUnsavedChanges && styles.headerButtonTextActive
+                ]}>
+                  Done
+                </Text>
+              )}
+            </TouchableOpacity>
+          )
+        }} 
+      />
+      
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-          <ScrollView 
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContentContainer}
+          <LinearGradient
+            colors={['#F8F9FA', '#FFFFFF']}
+            style={styles.gradientBackground}
           >
-            {/* Profile Photo Card */}
-            <View style={styles.menuCard}>
-              <View style={styles.photoSection}>
-                <View style={styles.photoContainer}>
-                  <Image
-                    source={{
-                      uri: profile.avatar || "https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/1d39bdc7-8fd1-469d-802d-e6f3e2c968cd"
-                    }}
-                    style={styles.profilePhoto}
-                  />
-                  <TouchableOpacity style={styles.editPhotoIcon}>
-                    <Image
-                      source={require('../assets/images/edit_profile.png')}
-                      style={styles.editIcon}
-                    />
-                  </TouchableOpacity>
-                </View>
+            <ScrollView 
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.avatarSection}>
+                <Image
+                  source={{
+                    uri: formData.avatar || "https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/1d39bdc7-8fd1-469d-802d-e6f3e2c968cd"
+                  }}
+                  style={styles.avatar}
+                />
+                <TouchableOpacity style={styles.changeAvatarBtn}>
+                  <Text style={styles.changeAvatarText}>Change Avatar</Text>
+                </TouchableOpacity>
               </View>
-            </View>
 
-            {/* Basic Information Card */}
-            <View style={styles.menuCard}>
-              {/* User name */}
-              <TouchableOpacity style={styles.menuItem} onPress={handleNameEdit}>
-                <Text style={styles.labelStyle}>User name</Text>
-                <Text style={styles.valueStyle}>{safeText(profile.username)}</Text>
-                <Text style={styles.arrow}>›</Text>
-              </TouchableOpacity>
+              <View style={styles.card}>
+                {renderInputRow("Username", "username", "Enter username")}
+                
+                <View style={styles.divider} />
+                
+                <View style={styles.menuItem}>
+                  <Text style={styles.labelStyle}>User ID</Text>
+                  <Text style={[styles.valueStyle, { color: '#94A3B8' }]}>{formData.id}</Text>
+                </View>
 
-              {/* Verification */}
-              <TouchableOpacity style={styles.menuItem}>
-                <Text style={styles.labelStyle}>Verification</Text>
-                <View style={styles.verificationContainer}>
-                  <Text style={styles.valueStyle}>{safeText(profile.verification)}</Text>
-                  <View style={styles.verifiedBadge}>
-                    <Text style={styles.verifiedText}>Verified</Text>
+                <View style={styles.divider} />
+
+                <View style={styles.menuItem}>
+                  <Text style={styles.labelStyle}>Verification</Text>
+                  <View style={styles.verificationContainer}>
+                    <Text style={styles.valueStyle}>{formData.verification}</Text>
+                    <View style={styles.verifiedBadge}>
+                      <Text style={styles.verifiedText}>Verified</Text>
+                    </View>
                   </View>
                 </View>
-                <Text style={styles.arrow}>›</Text>
-              </TouchableOpacity>
-
-              {/* User ID */}
-              <TouchableOpacity style={styles.menuItem}>
-                <Text style={styles.labelStyle}>User ID</Text>
-                <Text style={styles.valueStyle}>{safeText(profile.id)}</Text>
-                <Text style={styles.arrow}>›</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Introduction Card */}
-            <View style={styles.menuCard}>
-              <TouchableOpacity style={styles.menuItem} onPress={handleIntroductionEdit}>
-                <Text style={styles.labelStyle}>Introduction</Text>
-                <Text style={styles.introValue} numberOfLines={2} ellipsizeMode="tail">
-                  {safeText(profile.introduction) || 'Add an introduction...'}
-                </Text>
-                <Text style={styles.arrow}>›</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Detailed Information Card */}
-            <View style={styles.menuCard}>
-              <Text style={styles.sectionTitle}>Detailed information</Text>
-              
-              <TouchableOpacity style={styles.menuItem} onPress={() => setShowSchoolPicker(true)}>
-                <Text style={styles.labelStyle}>University</Text>
-                <Text style={styles.valueStyle}>{safeText(profile.school)}</Text>
-                <Text style={styles.arrow}>›</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.menuItem} onPress={() => setShowTypePicker(true)}>
-                <Text style={styles.labelStyle}>Type</Text>
-                <Text style={styles.valueStyle}>{safeText(profile.type)}</Text>
-                <Text style={styles.arrow}>›</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.menuItem}>
-                <Text style={styles.labelStyle}>Major</Text>
-                <Text style={styles.valueStyle}>{safeText(profile.major) || 'Not specified'}</Text>
-                <Text style={styles.arrow}>›</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.menuItem}>
-                <Text style={styles.labelStyle}>Institution</Text>
-                <Text style={styles.valueStyle}>{safeText(profile.institution) || 'Not specified'}</Text>
-                <Text style={styles.arrow}>›</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.bottomSpacer} />
-          </ScrollView>
-        </LinearGradient>
-
-        {/* 编辑模式显示保存按钮 - 修正显示逻辑 */}
-        {(isEditingName || isEditingIntroduction) && (
-          <TouchableOpacity 
-            onPress={handleSave}
-            disabled={saving}
-            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          >
-            <Text style={styles.saveButtonText}>
-              {saving ? 'Saving...' : 'Save'}
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {/* 用户名编辑Modal */}
-        <Modal visible={isEditingName} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Edit Username</Text>
-                <TouchableOpacity onPress={handleNameCancel}>
-                  <Text style={styles.modalCloseButton}>Cancel</Text>
-                </TouchableOpacity>
               </View>
-              
-              <View style={{ paddingHorizontal: 20, paddingVertical: 15 }}>
-                <TextInput
-                  style={styles.modalInput}
-                  value={safeText(tempName)}
-                  onChangeText={setTempName}
-                  placeholder="Enter username"
-                  autoFocus
-                />
-              </View>
-              
-              <View style={styles.modalButtons}>
-                <TouchableOpacity style={styles.modalCancelButton} onPress={handleNameCancel}>
-                  <Text style={styles.modalCancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.modalSaveButton} onPress={handleNameSave}>
-                  <Text style={styles.modalSaveText}>Save</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
 
-        {/* 介绍编辑Modal - 优化显示 */}
-        <Modal visible={isEditingIntroduction} transparent animationType="slide">
-          <KeyboardAvoidingView
-            style={styles.modalOverlay}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-          >
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Edit Introduction</Text>
-                <TouchableOpacity onPress={handleIntroductionCancel}>
-                  <Text style={styles.modalCloseButton}>Cancel</Text>
-                </TouchableOpacity>
+              <View style={styles.card}>
+                {renderInputRow("Introduction", "introduction", "Tell us about yourself...", true)}
+                <View style={styles.characterCount}>
+                  <Text style={styles.characterCountText}>
+                    {formData.introduction.length}/200
+                  </Text>
+                </View>
               </View>
-              
-              <ScrollView 
-                style={styles.modalBody}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-              >
-                <TextInput
-                  style={[styles.modalInput, styles.modalTextArea]}
-                  value={safeText(tempIntroduction)}
-                  onChangeText={setTempIntroduction}
-                  placeholder="Enter introduction"
-                  multiline
-                  numberOfLines={4}
-                  autoFocus
-                  maxLength={200}
-                />
-                <Text style={styles.characterCount}>
-                  {`${safeText(tempIntroduction).length}/200`}
-                </Text>
-              </ScrollView>
-              
-              <View style={styles.modalButtons}>
-                <TouchableOpacity style={styles.modalCancelButton} onPress={handleIntroductionCancel}>
-                  <Text style={styles.modalCancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.modalSaveButton} onPress={handleIntroductionSave}>
-                  <Text style={styles.modalSaveText}>Save</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
-        </Modal>
 
-        {/* 学校选择Modal - 修复文本渲染问题 */}
+              <View style={styles.card}>
+                <Text style={styles.sectionHeader}>DETAILED INFORMATION</Text>
+                
+                {renderSelectorRow("University", formData.school, () => setShowSchoolPicker(true))}
+                <View style={styles.divider} />
+                
+                {renderSelectorRow("Type", formData.type, () => setShowTypePicker(true))}
+                <View style={styles.divider} />
+                
+                {renderSelectorRow(
+                  "Major", 
+                  formData.major, 
+                  () => setShowMajorPicker(true),
+                  getMajorDisplayName(formData.major)
+                )}
+                <View style={styles.divider} />
+                
+                <View style={styles.menuItem}>
+                  <Text style={styles.labelStyle}>Institution</Text>
+                  <Text style={styles.valueStyle}>{formData.institution || 'Not specified'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.bottomSpacer} />
+            </ScrollView>
+          </LinearGradient>
+        </KeyboardAvoidingView>
+
         <Modal visible={showSchoolPicker} transparent animationType="slide">
           <View style={styles.modalOverlay}>
-            <View style={styles.schoolModalContent}>
-              <View style={styles.schoolModalHeader}>
-                <Text style={styles.schoolModalTitle}>Select University</Text>
+            <View style={styles.pickerModal}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Select University</Text>
                 <TouchableOpacity onPress={() => setShowSchoolPicker(false)}>
-                  <Text style={styles.modalCloseButton}>Done</Text>
+                  <Text style={styles.pickerDone}>Done</Text>
                 </TouchableOpacity>
               </View>
               
-              <ScrollView 
-                style={styles.schoolScrollView}
-                showsVerticalScrollIndicator={false}
-              >
-                {HK_UNIVERSITIES.map((school, index) => {
-                  console.log(`Rendering university ${index}:`, school);
-                  return (
-                    <TouchableOpacity
-                      key={school.id}
-                      style={[
-                        styles.schoolItemRow,
-                        profile.school === school.shortName && styles.schoolItemRowSelected
-                      ]}
-                      onPress={() => handleSchoolSelect(school)}
-                    >
-                      <View style={styles.schoolItemContent}>
-                        <View style={styles.schoolItemTextContainer}>
-                          <Text style={styles.schoolItemTitle}>{safeText(school.shortName)}</Text>
-                          <Text style={styles.schoolItemSubtitle}>{safeText(school.name)}</Text>
-                        </View>
-                        {profile.school === school.shortName && (
-                          <View style={styles.schoolCheckmark}>
-                            <Text style={styles.schoolCheckmarkText}>✓</Text>
-                          </View>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
-
-        {/* 类型选择Modal - 同样修复 */}
-        <Modal visible={showTypePicker} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select Type</Text>
-                <TouchableOpacity onPress={() => setShowTypePicker(false)}>
-                  <Text style={styles.modalCloseButton}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-              
-              <ScrollView style={styles.modalScrollView}>
-                {DEGREE_TYPES.map((type) => (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {HK_UNIVERSITIES.map((school, index) => (
                   <TouchableOpacity
-                    key={type.id}
-                    style={styles.modalOption}
-                    onPress={() => handleTypeSelect(type)}
+                    key={school.id}
+                    style={[
+                      styles.pickerItem,
+                      formData.school === school.shortName && styles.pickerItemSelected
+                    ]}
+                    onPress={() => handleSchoolSelect(school)}
                   >
-                    <View style={styles.modalOptionContent}>
-                      <Text style={styles.modalOptionTitle}>{safeText(type.name)}</Text>
-                      <View style={[
-                        styles.radioButton,
-                        profile.type === type.name && styles.radioButtonSelected
-                      ]}>
-                        {profile.type === type.name && (
-                          <View style={styles.radioButtonInner} />
-                        )}
+                    <View style={styles.pickerItemContent}>
+                      <View>
+                        <Text style={styles.pickerItemTitle}>{school.shortName}</Text>
+                        <Text style={styles.pickerItemSubtitle}>{school.name}</Text>
                       </View>
+                      {formData.school === school.shortName && (
+                        <View style={styles.checkmark}>
+                          <Text style={styles.checkmarkText}>✓</Text>
+                        </View>
+                      )}
                     </View>
                   </TouchableOpacity>
                 ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={showTypePicker} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.pickerModal}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Select Type</Text>
+                <TouchableOpacity onPress={() => setShowTypePicker(false)}>
+                  <Text style={styles.pickerDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {DEGREE_TYPES.map((type) => (
+                  <TouchableOpacity
+                    key={type.id}
+                    style={[
+                      styles.pickerItem,
+                      formData.type === type.name && styles.pickerItemSelected
+                    ]}
+                    onPress={() => handleTypeSelect(type)}
+                  >
+                    <View style={styles.pickerItemContent}>
+                      <Text style={styles.pickerItemTitle}>{type.name}</Text>
+                      {formData.type === type.name && (
+                        <View style={styles.checkmark}>
+                          <Text style={styles.checkmarkText}>✓</Text>
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={showMajorPicker} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.pickerModal}>
+              <View style={styles.pickerHeader}>
+                <TouchableOpacity onPress={() => {
+                  if (selectedFaculty) {
+                    setSelectedFaculty('');
+                  } else {
+                    setShowMajorPicker(false);
+                  }
+                }}>
+                  <Text style={styles.pickerDone}>
+                    {selectedFaculty ? '← Back' : 'Cancel'}
+                  </Text>
+                </TouchableOpacity>
+                <Text style={styles.pickerTitle}>
+                  {selectedFaculty || 'Select Major'}
+                </Text>
+                <TouchableOpacity onPress={() => {
+                  setShowMajorPicker(false);
+                  setSelectedFaculty('');
+                }}>
+                  <Text style={styles.pickerDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {!selectedFaculty ? (
+                  MAJOR_OPTIONS.map((facultyGroup) => (
+                    <TouchableOpacity
+                      key={facultyGroup.faculty}
+                      style={styles.pickerItem}
+                      onPress={() => setSelectedFaculty(facultyGroup.faculty)}
+                    >
+                      <View style={styles.pickerItemContent}>
+                        <Text style={styles.pickerItemTitle}>{facultyGroup.faculty}</Text>
+                        <Text style={styles.arrow}>›</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  MAJOR_OPTIONS
+                    .find(f => f.faculty === selectedFaculty)
+                    ?.majors.map((major) => (
+                      <TouchableOpacity
+                        key={major.id}
+                        style={[
+                          styles.pickerItem,
+                          formData.major === major.name && styles.pickerItemSelected
+                        ]}
+                        onPress={() => handleMajorSelect(major.id, major.name)}
+                      >
+                        <View style={styles.pickerItemContent}>
+                          <Text style={styles.pickerItemSubtitle}>{major.name}</Text>
+                          {formData.major === major.name && (
+                            <View style={styles.checkmark}>
+                              <Text style={styles.checkmarkText}>✓</Text>
+                            </View>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                )}
               </ScrollView>
             </View>
           </View>
@@ -593,112 +648,153 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8F9FA',
   },
   
-  headerContainer: {
-    backgroundColor: '#FFFFFF',
-  },
-  
-  // 渐变背景
   gradientBackground: {
     flex: 1,
   },
   
-  scrollView: {
+  scrollContent: {
+    paddingBottom: 40,
+  },
+
+  loadingContainer: {
     flex: 1,
-    backgroundColor: 'transparent',
-  },
-
-  scrollContentContainer: {
-    paddingTop: 10,
-    paddingBottom: 80, // 为保存按钮留出空间
-  },
-
-  // 通用卡片样式
-  menuCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    marginHorizontal: 18,
-    marginVertical: 10,
-    paddingVertical: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  
-  // 区块行样式
-  menuItem: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    gap: 12,
   },
   
-  // 标签样式
-  labelStyle: {
-    fontSize: 14,
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
     color: '#9CA3AF',
-    width: 100,
   },
-  
-  // 值样式
-  valueStyle: {
-    fontSize: 15,
+
+  headerButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+
+  headerButtonDisabled: {
+    opacity: 0.3,
+  },
+
+  headerButtonText: {
+    color: '#94A3B8',
+    fontSize: 16,
     fontWeight: '600',
-    color: '#0F172A',
-    flex: 1,
-    textAlign: 'right',
   },
-  
-  // 头像卡片
-  photoSection: {
+
+  headerButtonTextActive: {
+    color: '#0A66C2',
+  },
+
+  avatarSection: {
     alignItems: 'center',
-    paddingVertical: 20,
-    height: 160,
-    justifyContent: 'center',
+    paddingVertical: 24,
+    backgroundColor: '#FFFFFF',
+    marginBottom: 16,
   },
   
-  photoContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  
-  profilePhoto: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: '#FF6B9D',
   },
   
-  // 编辑图标 - 放在头像右下角
-  editPhotoIcon: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
+  changeAvatarBtn: {
+    marginTop: 12,
+  },
+  
+  changeAvatarText: {
+    color: '#0A66C2',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+
+  card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
   },
-  
-  editIcon: {
-    width: 20,
-    height: 20,
+
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    minHeight: 56,
   },
-  
-  // Verified 徽章
+
+  labelStyle: {
+    width: 100,
+    fontSize: 15,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+
+  inputStyle: {
+    flex: 1,
+    fontSize: 15,
+    color: '#0F172A',
+    fontWeight: '500',
+    padding: 0,
+    textAlign: 'right',
+  },
+
+  multilineInput: {
+    textAlign: 'left',
+    minHeight: 80,
+    textAlignVertical: 'top',
+    marginRight: 16,
+  },
+
+  valueStyle: {
+    flex: 1,
+    fontSize: 15,
+    color: '#0F172A',
+    fontWeight: '500',
+    textAlign: 'right',
+  },
+
+  arrow: {
+    marginLeft: 8,
+    color: '#CBD5E1',
+    fontSize: 20,
+    fontWeight: '300',
+  },
+
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#E2E8F0',
+    marginLeft: 16,
+  },
+
+  characterCount: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    alignItems: 'flex-end',
+  },
+
+  characterCountText: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+
+  sectionHeader: {
+    fontSize: 13,
+    color: '#94A3B8',
+    fontWeight: '600',
+    marginLeft: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+
   verificationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -710,325 +806,97 @@ const styles = StyleSheet.create({
   verifiedBadge: {
     backgroundColor: '#0A66C2',
     borderRadius: 2,
-    paddingHorizontal: 3,
-    paddingVertical: 1,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
   },
   
   verifiedText: {
-    fontSize: 8,
+    fontSize: 9,
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
-  
-  // Introduction 特殊样式 - 修改为不加粗，限制两行
-  introValue: {
-    fontSize: 15,
-    fontWeight: '400', // 改为普通字重，不加粗
-    color: '#0F172A',
-    flex: 1,
-    textAlign: 'right',
-    lineHeight: 20,
-  },
-  
-  // 分组标题
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#64748B',
-    marginVertical: 8,
-    paddingHorizontal: 18,
-  },
-  
-  // 箭头
-  arrow: {
-    color: '#CBD5E1',
-    fontSize: 18,
-    fontWeight: '300',
-  },
-  
-  // 编辑模式保存按钮
-  saveButton: {
-    position: 'absolute',
-    bottom: 40,
-    right: 20,
-    backgroundColor: '#4A90E2',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 25,
-    shadowColor: '#4A90E2',
-    shadowOpacity: 0.3,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  
+
   bottomSpacer: {
     height: 30,
   },
-  
-  // 加载状态
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  loadingText: {
-    fontSize: 16,
-    color: '#9CA3AF',
-  },
-  
-  // Modal基础样式
+
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'flex-end',
   },
-  
-  // 通用Modal内容
-  modalContent: {
+
+  pickerModal: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '70%', // 限制最大高度
-    minHeight: 300, // 设置最小高度
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    maxHeight: '70%',
+    paddingBottom: Platform.OS === 'ios' ? 20 : 0,
   },
-  
-  // Modal头部
-  modalHeader: {
+
+  pickerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E2E8F0',
   },
-  
-  // Modal标题
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#475569',
+
+  pickerTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#0F172A',
   },
-  
-  // Modal关闭按钮
-  modalCloseButton: {
+
+  pickerDone: {
     fontSize: 16,
     color: '#0A66C2',
     fontWeight: '600',
   },
-  
-  // Modal滚动视图
-  modalScrollView: {
+
+  pickerItem: {
     paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#F1F5F9',
   },
-  
-  // Modal输入区域 - 优化键盘适配
-  modalBody: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    maxHeight: 200, // 限制最大高度，避免键盘遮挡
-  },
-  
-  modalInput: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: '#475569',
-    marginBottom: 8,
-  },
-  
-  modalTextArea: {
-    height: 120, // 稍微增加高度
-    textAlignVertical: 'top',
-  },
-  
-  // 字符计数器
-  characterCount: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    textAlign: 'right',
-    marginBottom: 8,
-  },
-  
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-  },
-  
-  modalCancelButton: {
-    backgroundColor: '#E2E8F0',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    flex: 1,
-    marginRight: 8,
-  },
-  
-  modalCancelText: {
-    color: '#64748B',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  
-  modalSaveButton: {
-    backgroundColor: '#4A90E2',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    flex: 1,
-    marginLeft: 8,
-  },
-  
-  modalSaveText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  
-  // 学校选择Modal特定样式 - 修复高度和留白问题
-  schoolModalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    height: '70%',
-    paddingTop: 20,
-    marginBottom: 0, // 改为0，移除底部间距
-    flex: 0,
-  },
-  
-  schoolModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  
-  schoolModalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#374151',
-  },
-  
-  schoolScrollView: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  
-  schoolItemRow: {
-    height: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-  },
-  
-  schoolItemRowSelected: {
+
+  pickerItemSelected: {
     backgroundColor: '#F0F8FF',
   },
-  
-  schoolItemContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  
-  schoolItemTextContainer: {
-    flex: 1,
-  },
-  
-  schoolItemTitle: {
-    fontSize: 16,
-    color: '#374151',
-    lineHeight: 20,
-    fontWeight: '600', // 缩写用粗体，与FilterScreen一致
-    marginBottom: 2, // 添加间距
-  },
-  
-  schoolItemSubtitle: {
-    fontSize: 14, // 改为14px，与FilterScreen一致
-    color: '#ACB1C6', // 改为与FilterScreen一致的颜色
-    fontWeight: '400',
-  },
-  
-  schoolCheckmark: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#2563EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  
-  schoolCheckmarkText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  
-  // Type选择器选项样式
-  modalOption: {
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  
-  modalOptionContent: {
+
+  pickerItemContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  
-  modalOptionTitle: {
+
+  pickerItemTitle: {
     fontSize: 16,
+    color: '#0F172A',
     fontWeight: '600',
-    color: '#475569',
   },
-  
-  radioButton: {
+
+  pickerItemSubtitle: {
+    fontSize: 14,
+    color: '#64748B',
+    marginTop: 2,
+  },
+
+  checkmark: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#ACB1C6',
+    backgroundColor: '#0A66C2',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  
-  radioButtonSelected: {
-    borderColor: '#0A66C2',
-  },
-  
-  radioButtonInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#0A66C2',
+
+  checkmarkText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });

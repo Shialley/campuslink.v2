@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -11,6 +11,8 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { getUserProfile } from '../services/api';
+import { storage } from '../utils/webCompatibility';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_WIDTH = SCREEN_WIDTH * 0.8;
@@ -26,15 +28,42 @@ interface SideDrawerProps {
   };
 }
 
-export default function SideDrawer({ isOpen, onClose, userProfile }: SideDrawerProps) {
+export default function SideDrawer({ isOpen, onClose, userProfile: initialUserProfile }: SideDrawerProps) {
   const [slideAnim] = React.useState(new Animated.Value(-DRAWER_WIDTH));
   const [shouldRender, setShouldRender] = React.useState(isOpen);
   const [isNavigating, setIsNavigating] = React.useState(false);
+  const [userProfile, setUserProfile] = useState(initialUserProfile);
+
+  // 加载真实用户数据
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      try {
+        const token = await storage.getItem('userToken');
+        if (!token) return;
+
+        const result = await getUserProfile(token);
+        if (result.success && result.data) {
+          setUserProfile({
+            id: result.data.id || initialUserProfile.id,
+            username: result.data.username || initialUserProfile.username,
+            real_name: result.data.real_name,
+            avatar: result.data.avatar,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load user profile in SideDrawer:', error);
+      }
+    };
+
+    if (isOpen) {
+      loadUserProfile();
+    }
+  }, [isOpen, initialUserProfile]);
 
   React.useEffect(() => {
     if (isOpen) {
       setShouldRender(true);
-      setIsNavigating(false); // 重置导航状态
+      setIsNavigating(false);
     }
     
     Animated.timing(slideAnim, {
@@ -49,7 +78,7 @@ export default function SideDrawer({ isOpen, onClose, userProfile }: SideDrawerP
   }, [isOpen]);
 
   const handleMenuPress = (route: string) => {
-    if (isNavigating) return; // 如果正在导航，直接返回
+    if (isNavigating) return;
     
     setIsNavigating(true);
     onClose();
@@ -99,20 +128,29 @@ export default function SideDrawer({ isOpen, onClose, userProfile }: SideDrawerP
         ]}
       >
         <ScrollView style={styles.drawerContent} showsVerticalScrollIndicator={false}>
-          {/* 用户信息区域 - 简约白色背景 */}
+          {/* 用户信息区域 */}
           <View style={styles.profileSection}>
             <View style={styles.profileHeader}>
               <View style={styles.profileInfo}>
                 <View style={styles.avatarContainer}>
                   <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                      {userProfile.username[0].toUpperCase()}
-                    </Text>
+                    {userProfile.avatar ? (
+                      <Image 
+                        source={{ uri: userProfile.avatar }} 
+                        style={styles.avatarImage}
+                      />
+                    ) : (
+                      <Text style={styles.avatarText}>
+                        {userProfile.username[0].toUpperCase()}
+                      </Text>
+                    )}
                   </View>
                 </View>
                 <View style={styles.userTextInfo}>
-                  <Text style={styles.username}>{userProfile.username}</Text>
-                  <Text style={styles.userId}>用户ID: 12345678</Text>
+                  <Text style={styles.username}>
+                    {userProfile.real_name || userProfile.username}
+                  </Text>
+                  <Text style={styles.userId}>用户ID: {userProfile.id}</Text>
                 </View>
               </View>
               <TouchableOpacity 
@@ -256,7 +294,7 @@ export default function SideDrawer({ isOpen, onClose, userProfile }: SideDrawerP
               <Text style={styles.menuArrow}>›</Text>
             </TouchableOpacity>
 
-            {/* 退出登录 - 统一样式 */}
+            {/* 退出登录 */}
             <TouchableOpacity
               style={styles.menuItem}
               onPress={handleLogout}
@@ -338,6 +376,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
   },
   avatarText: {
     fontSize: 24,
@@ -404,7 +448,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#CBD5E1',
   },
-  
   divider: {
     height: 1,
     backgroundColor: '#F1F5F9',

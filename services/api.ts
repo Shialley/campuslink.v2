@@ -145,6 +145,23 @@ export interface CommentData {
   ref?: string;
 }
 
+// ✅ Energy Point 相关接口定义
+export interface AddEnergyPointRequest {
+  post_id: string;
+  score: number;
+}
+
+export interface RedeemGiftRequest {
+  id: number;
+}
+
+export interface Gift {
+  id: number;
+  name: string;
+  price: number;
+  left_number?: number;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -327,6 +344,56 @@ const mockGetUserComments = async (userid: string, page: number = 1): Promise<Ap
   };
 };
 
+// 新增：获取能量交易历史记录的 Mock 函数
+const mockGetEnergyHistory = async (page: number = 1): Promise<ApiResponse<any>> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  const mockHistory = [
+    { 
+      id: '1', 
+      action: 'Read a post', 
+      points: 35, 
+      date: '2024-12-12T10:30:00Z',
+      post_id: 'post-1',
+      type: 'earn'
+    },
+    { 
+      id: '2', 
+      action: 'Read a post', 
+      points: 130, 
+      date: '2024-12-12T09:15:00Z',
+      post_id: 'post-2',
+      type: 'earn'
+    },
+    { 
+      id: '3', 
+      action: 'Make a post', 
+      points: -1500, 
+      date: '2024-12-11T14:20:00Z',
+      post_id: 'post-3',
+      type: 'spend'
+    },
+    { 
+      id: '4', 
+      action: 'Read a post', 
+      points: 10, 
+      date: '2024-12-11T11:45:00Z',
+      post_id: 'post-4',
+      type: 'earn'
+    },
+  ];
+  
+  return {
+    success: true,
+    data: {
+      history: mockHistory,
+      page: page,
+      total_pages: 1,
+      total_count: mockHistory.length
+    }
+  };
+};
+
 // 其他简单的 mock 函数
 const mockLikePost = async (postId: string): Promise<ApiResponse<any>> => {
   await new Promise(resolve => setTimeout(resolve, 300));
@@ -401,6 +468,57 @@ const mockGetLikeCount = async (postId: string): Promise<ApiResponse<any>> => {
 const mockGetEnergyPoint = async (): Promise<ApiResponse<any>> => {
   await new Promise(resolve => setTimeout(resolve, 300));
   return { success: true, data: { energy_point: 100 } };
+};
+
+// Energy Point 相关 Mock 函数
+const mockAddEnergyPoint = async (postId: string, score: number): Promise<ApiResponse<any>> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  return { 
+    success: true, 
+    data: { 
+      message: "Energy point updated successfully",
+      energy_point: 110 
+    } 
+  };
+};
+
+const mockRedeemGift = async (giftId: number): Promise<ApiResponse<any>> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return { 
+    success: true, 
+    data: { 
+      message: "Redeemed successfully",
+      gift: {
+        id: giftId,
+        name: "Test Gift",
+        price: 20
+      },
+      energy_point: 80
+    } 
+  };
+};
+
+const mockGetGiftList = async (): Promise<ApiResponse<any>> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  return { 
+    success: true, 
+    data: { 
+      items: [
+        {
+          id: 1,
+          name: "Amazon Gift Card",
+          price: 20,
+          left_number: 5
+        },
+        {
+          id: 2,
+          name: "VIP Membership",
+          price: 40,
+          left_number: 3
+        }
+      ]
+    } 
+  };
 };
 
 // ✅ 真实 API 函数 - 按功能分组，确保没有重复
@@ -1805,4 +1923,206 @@ export const getUserLikes = async (token: string): Promise<ApiResponse<any>> => 
 // export const getSaves = async (token: string): Promise<ApiResponse<any>> => {
 //   // ... 已存在的代码
 // };
+
+// ============================
+// Energy Point 相关 API
+// ============================
+
+/**
+ * 增加 Energy Point
+ * POST /v1/energy_point_add
+ */
+export const addEnergyPoint = async (
+  postId: string, 
+  score: number, 
+  token: string
+): Promise<ApiResponse<any>> => {
+  if (USE_MOCK_API) {
+    console.log('🔧 Using Mock API for addEnergyPoint');
+    return mockAddEnergyPoint(postId, score);
+  }
+  
+  try {
+    const response = await fetch(`${BASE_URL}/energy_point_add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-access-token': token,
+      },
+      body: JSON.stringify({
+        post_id: postId,
+        score: score,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 200) {
+      return {
+        success: true,
+        data: {
+          message: data.message || 'Energy point updated successfully',
+          energy_point: data.energy_point,
+        },
+      };
+    } else {
+      return {
+        success: false,
+        message: data.message || 'Failed to add energy point',
+      };
+    }
+  } catch (error) {
+    console.error('Add energy point error:', error);
+    return {
+      success: false,
+      message: 'Network error or server unavailable',
+    };
+  }
+};
+
+/**
+ * 礼物兑换（扣除积分 + 扣库存 + 写兑换记录）
+ * POST /v1/energy_point_redeem
+ */
+export const redeemGift = async (
+  giftId: number, 
+  token: string
+): Promise<ApiResponse<any>> => {
+  if (USE_MOCK_API) {
+    console.log('🔧 Using Mock API for redeemGift');
+    return mockRedeemGift(giftId);
+  }
+  
+  try {
+    const response = await fetch(`${BASE_URL}/energy_point_redeem`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-access-token': token,
+      },
+      body: JSON.stringify({
+        id: giftId,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 200) {
+      return {
+        success: true,
+        data: {
+          message: data.message || 'Redeemed successfully',
+          gift: data.gift,
+          energy_point: data.energy_point,
+        },
+      };
+    } else if (response.status === 400) {
+      return {
+        success: false,
+        message: data.message || 'Insufficient points or out of stock',
+      };
+    } else {
+      return {
+        success: false,
+        message: data.message || 'Failed to redeem gift',
+      };
+    }
+  } catch (error) {
+    console.error('Redeem gift error:', error);
+    return {
+      success: false,
+      message: 'Network error or server unavailable',
+    };
+  }
+};
+
+/**
+ * 可兑换商品列表查询
+ * GET /v1/gift_list
+ */
+export const getGiftList = async (token: string): Promise<ApiResponse<any>> => {
+  if (USE_MOCK_API) {
+    console.log('🔧 Using Mock API for getGiftList');
+    return mockGetGiftList();
+  }
+  
+  try {
+    const response = await fetch(`${BASE_URL}/gift_list`, {
+      method: 'GET',
+      headers: {
+        'x-access-token': token,
+      },
+    });
+
+    const data = await response.json();
+
+    if (response.status === 200) {
+      return {
+        success: true,
+        data: {
+          items: data.items || [],
+        },
+      };
+    } else {
+      return {
+        success: false,
+        message: data.message || 'Failed to fetch gift list',
+      };
+    }
+  } catch (error) {
+    console.error('Get gift list error:', error);
+    return {
+      success: false,
+      message: 'Network error or server unavailable',
+    };
+  }
+};
+
+/**
+ * 获取能量交易历史记录
+ * GET /v1/energy_point_history
+ */
+export const getEnergyHistory = async (
+  page: number = 1,
+  token: string
+): Promise<ApiResponse<any>> => {
+  if (USE_MOCK_API) {
+    console.log('🔧 Using Mock API for getEnergyHistory');
+    return mockGetEnergyHistory(page);
+  }
+  
+  try {
+    const response = await fetch(`${BASE_URL}/energy_point_history?page=${page}`, {
+      method: 'GET',
+      headers: {
+        'x-access-token': token,
+      },
+    });
+
+    const data = await response.json();
+
+    if (response.status === 200) {
+      return {
+        success: true,
+        data: {
+          history: data.history || [],
+          page: data.page || page,
+          total_pages: data.total_pages || 1,
+          total_count: data.total_count || 0,
+        },
+      };
+    } else {
+      return {
+        success: false,
+        message: data.message || 'Failed to fetch energy history',
+      };
+    }
+  } catch (error) {
+    console.error('Get energy history error:', error);
+    return {
+      success: false,
+      message: 'Network error or server unavailable',
+    };
+  }
+};
 

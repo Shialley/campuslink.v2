@@ -3,6 +3,7 @@ import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   RefreshControl,
   ScrollView,
@@ -14,6 +15,8 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import CommonHeader from '../components/CommonHeader';
+import { getSaves } from '../services/api';
+import { getImageDisplayUrl } from '../utils/imageUtils';
 
 // 帖子数据类型
 interface FavoritePost {
@@ -31,9 +34,13 @@ interface FavoritePost {
 
 export default function MyFavoritesScreen() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [favoritePosts, setFavoritePosts] = useState<FavoritePost[]>([]);
+
+  useEffect(() => {
+    loadFavoritePosts();
+  }, []);
 
   // 加载收藏的帖子数据
   const loadFavoritePosts = async (isRefresh: boolean = false) => {
@@ -46,85 +53,136 @@ export default function MyFavoritesScreen() {
 
       const token = await AsyncStorage.getItem('userToken');
       
-      if (token) {
-        try {
-          console.log('Loading favorite posts... (using mock data)');
-          setFavoritePosts(getMockFavoritePosts());
+      if (!token) {
+        console.warn('⚠️ No token found, redirecting to login');
+        router.push('/login');
+        return;
+      }
+
+      console.log('📡 Loading favorite posts from API...');
+      const result = await getSaves(token);
+      
+      console.log('✅ getSaves result:', result);
+      
+      if (result.success && result.data?.saves) {
+        // 转换 API 数据格式
+        const posts: FavoritePost[] = result.data.saves.map((save: any) => {
+          // save 可能包含完整的 post 对象或只是 post_id
+          const post = save.post || save;
+          const content = post.content || '';
           
-        } catch (apiError) {
-          console.log('Favorites API error, using mock data:', apiError);
-          setFavoritePosts(getMockFavoritePosts());
-        }
+          return {
+            id: post.postid || post.post_id || save.post_id,
+            title: extractTitle(content, post.title),
+            content: content,
+            time: formatPostTime(post.createtime || save.created_at || new Date().toISOString()),
+            author: post.cover_name || post.author || 'Anonymous',
+            avatar: post.avatar,
+            readTime: calculateReadTime(content),
+            energy: calculateEnergy(content),
+            image_url: post.image_url ? getImageDisplayUrl(post.image_url) : undefined,
+            isSaved: true,
+          };
+        });
+        
+        setFavoritePosts(posts);
+        console.log('✅ Favorite posts loaded successfully:', posts.length);
       } else {
-        console.log('No token, using mock data');
-        setFavoritePosts(getMockFavoritePosts());
+        console.warn('⚠️ No favorite posts found');
+        setFavoritePosts([]);
       }
     } catch (error) {
-      console.error('Error loading favorite posts:', error);
-      setFavoritePosts(getMockFavoritePosts());
+      console.error('❌ Error loading favorite posts:', error);
+      Alert.alert('错误', '加载收藏失败');
+      setFavoritePosts([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  // 获取模拟收藏数据
-  const getMockFavoritePosts = (): FavoritePost[] => [
-    {
-      id: '1',
-      title: 'acct 101 pq sub 求组队',
-      content: '如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如...',
-      time: '19:04',
-      author: 'Tomas',
-      readTime: '30s',
-      energy: 20,
-      isSaved: true,
-      image_url: 'https://storage.googleapis.com/tagjs-prod.appspot.com/v1/egC8MCMzoa/yulzzgwh_expires_30_days.png',
-    },
-    {
-      id: '2',
-      title: '第九屆「任國榮先生生命科學講座',
-      content: '主講：沈祖堯教授\n報名鏈接：https://aaa-bbb.ccc',
-      time: '08:00',
-      author: 'cuhk_sls',
-      avatar: 'https://storage.googleapis.com/tagjs-prod.appspot.com/v1/egC8MCMzoa/gxilvdeq_expires_30_days.png',
-      readTime: '45s',
-      energy: 15,
-      isSaved: true,
-    },
-    {
-      id: '3',
-      title: '2024-25社會企業起動計劃：接受報名',
-      content: 'Social Enterprise Startup Scheme 2024-25: Open. The Social Enterprise Startup Scheme...',
-      time: '1 days ago',
-      author: 'cuhk_osa_seds',
-      avatar: 'https://storage.googleapis.com/tagjs-prod.appspot.com/v1/egC8MCMzoa/1jtfghtb_expires_30_days.png',
-      readTime: '2m',
-      energy: 25,
-      isSaved: true,
-    },
-    {
-      id: '4',
-      title: 'Elite Internship Program 2025',
-      content: 'Program Period : Mid June - 31 August 2025',
-      time: '2025/04/07',
-      author: 'career_center',
-      readTime: '1m',
-      energy: 18,
-      isSaved: true,
-    },
-    {
-      id: '5',
-      title: 'CS Project Team Formation',
-      content: 'Need 2 more members for CS capstone project. Experience with React Native preferred but not required...',
-      time: '17:45',
-      author: 'Bob',
-      avatar: 'https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/fa02901a-ef57-4acd-8802-9136a32e9512',
-      readTime: '60s',
-      energy: 30,
-      isSaved: true,
-    },
-  ];
+  // 从帖子内容中提取标题
+  const extractTitle = (content: string, apiTitle?: string): string => {
+    // 如果 API 返回了标题，优先使用
+    if (apiTitle && apiTitle.trim()) {
+      return apiTitle.length > 40 ? apiTitle.substring(0, 40) + '...' : apiTitle;
+    }
+    
+    // 否则从内容中提取
+    if (!content) return 'Untitled';
+    
+    // 移除 hashtags 并获取第一行
+    const firstLine = content
+      .split('\n')[0]
+      .replace(/#\S+/g, '')
+      .trim();
+      
+    if (firstLine.length > 40) {
+      return firstLine.substring(0, 40) + '...';
+    }
+    return firstLine || 'Untitled';
+  };
+
+  // 格式化帖子时间
+  const formatPostTime = (timestamp: string): string => {
+    try {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffInHours = Math.floor(diffMs / (1000 * 60 * 60));
+      
+      if (diffInHours < 1) {
+        const diffInMinutes = Math.floor(diffMs / (1000 * 60));
+        if (diffInMinutes < 1) return 'Just now';
+        return `${diffInMinutes}min ago`;
+      } else if (diffInHours < 24) {
+        return `${diffInHours}h ago`;
+      } else {
+        const diffInDays = Math.floor(diffInHours / 24);
+        if (diffInDays === 1) {
+          return '1 day ago';
+        } else if (diffInDays < 7) {
+          return `${diffInDays} days ago`;
+        } else {
+          return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return timestamp;
+    }
+  };
+
+  // 计算阅读时间
+  const calculateReadTime = (content: string): string => {
+    if (!content) return '30s';
+    
+    const wordsPerMinute = 200;
+    const words = content.split(/\s+/).length;
+    const minutes = Math.ceil(words / wordsPerMinute);
+    
+    if (minutes < 1) {
+      const seconds = Math.ceil((words / wordsPerMinute) * 60);
+      return `${Math.max(30, seconds)}s`;
+    } else if (minutes === 1) {
+      return '1m';
+    } else {
+      return `${minutes}m`;
+    }
+  };
+
+  // 计算能量值
+  const calculateEnergy = (content: string): number => {
+    if (!content) return 20;
+    
+    const baseEnergy = 10;
+    const contentLength = content.length;
+    // 每100个字符增加10能量
+    return baseEnergy + Math.floor(contentLength / 100) * 10;
+  };
 
   // 处理页面刷新
   const onRefresh = () => {
@@ -147,10 +205,29 @@ export default function MyFavoritesScreen() {
     });
   };
 
-  // 页面加载时获取数据
-  useEffect(() => {
-    loadFavoritePosts();
-  }, []);
+  // 加载中状态
+  if (loading) {
+    return (
+      <SafeAreaProvider>
+        <Stack.Screen options={{ headerShown: false }} />
+        <SafeAreaView style={styles.container} edges={['top']}>
+          {/* Header */}
+          <View style={styles.headerContainer}>
+            <CommonHeader 
+              onBack={handleBack}
+              title="My Favorites"
+              showMore={false}
+            />
+          </View>
+
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FFC107" />
+            <Text style={styles.loadingText}>Loading favorites...</Text>
+          </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
@@ -180,11 +257,7 @@ export default function MyFavoritesScreen() {
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
         >
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#FFC107" />
-            </View>
-          ) : favoritePosts.length > 0 ? (
+          {favoritePosts.length > 0 ? (
             <>
               {favoritePosts.map((post) => (
                 <TouchableOpacity 
@@ -229,7 +302,9 @@ export default function MyFavoritesScreen() {
                         />
                       ) : (
                         <View style={styles.avatarPlaceholder}>
-                          <Text style={styles.avatarText}>{post.author[0]}</Text>
+                          <Text style={styles.avatarText}>
+                            {post.author[0]?.toUpperCase()}
+                          </Text>
                         </View>
                       )}
                       <Text style={styles.username}>{post.author}</Text>
@@ -257,6 +332,12 @@ export default function MyFavoritesScreen() {
               />
               <Text style={styles.emptyTitle}>No Favorites Yet</Text>
               <Text style={styles.emptyText}>Start saving posts to see them here</Text>
+              <TouchableOpacity 
+                style={styles.exploreButton}
+                onPress={() => router.push('/')}
+              >
+                <Text style={styles.exploreButtonText}>Explore Posts</Text>
+              </TouchableOpacity>
             </View>
           )}
         </ScrollView>
@@ -291,6 +372,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 100,
+  },
+
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#64748B',
   },
 
   // 卡片样式 - 与 index.tsx 完全一致
@@ -450,5 +537,19 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     textAlign: 'center',
     lineHeight: 24,
+    marginBottom: 24,
+  },
+
+  exploreButton: {
+    backgroundColor: '#FFC107',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+
+  exploreButtonText: {
+    color: '#1F2937',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

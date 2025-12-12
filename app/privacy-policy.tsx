@@ -9,8 +9,8 @@ import CommonHeader from '../components/CommonHeader';
 const privacyContent = {
   EN: {
     title: 'Privacy Policy',
-    lastUpdated: 'Last Updated: August 14, 2025',
-    effectiveDate: 'Effective Date: August 14, 2025',
+    lastUpdated: 'Last Updated: December 10, 2025',
+    effectiveDate: 'Effective Date: December 10, 2025',
     controller: 'Data Controller: CampusLink Limited (Hong Kong SAR)',
     contact: 'Contact Email: campuslink_service@outlook.com',
     sections: [
@@ -105,8 +105,8 @@ const privacyContent = {
   },
   CN: {
     title: '隐私政策',
-    lastUpdated: '最后更新日期：2025年8月14日',
-    effectiveDate: '生效日期：2025年8月14日',
+    lastUpdated: '最后更新日期：2025年12月10日',
+    effectiveDate: '生效日期：2025年12月10日',
     controller: '数据管控者：CampusLink Limited（香港特别行政区）',
     contact: '联系邮箱：campuslink_service@outlook.com',
     sections: [
@@ -201,8 +201,8 @@ const privacyContent = {
   },
   HK: {
     title: '私隱政策',
-    lastUpdated: '最後更新日期：2025年8月14日',
-    effectiveDate: '生效日期：2025年8月14日',
+    lastUpdated: '最後更新日期：2025年12月10日',
+    effectiveDate: '生效日期：2025年12月10日',
     controller: '資料管控者：CampusLink Limited（香港特別行政區）',
     contact: '聯絡電郵：campuslink_service@outlook.com',
     sections: [

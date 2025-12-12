@@ -9,15 +9,15 @@ import CommonHeader from '../components/CommonHeader'; // 导入 CommonHeader
 const termsContent = {
   EN: {
     title: 'Terms of Service',
-    lastUpdated: 'Last updated: August 14, 2025',
-    effectiveDate: 'Effective date: August 14, 2025',
+    lastUpdated: 'Last updated: December 10, 2025',
+    effectiveDate: 'Effective date: December 10, 2025',
     provider: 'Provider: CampusLink Limited (Hong Kong SAR)',
     contact: 'Contact: campuslink_service@outlook.com',
     sections: [
       {
         title: '1. Acceptance and scope',
         content: [
-          '• Agreement: By accessing or using the CampusLink mobile app and related web/online features (the "Service"), you agree to be bound by these Terms of Service (the "Terms") and our Privacy Policy.',
+          '• Agreement: By accessing or using the CampusLink mobile app and related web/online features (the "Service"), you agree to be bound by these Terms of Service (the "Terms") and our Privacy Policy. The current version of the Service primarily focuses on targeted messaging, Energy Points purchase, and redemption features. We may gradually introduce other community features (such as public posts, comments, interactions) in future versions.',
           '• Age and authority: You confirm you are 18 or older, or have parental/guardian consent. If you use the Service on behalf of an organization (e.g., student society, university unit, or company), you represent and warrant you are authorized to bind that organization to these Terms.'
         ]
       },
@@ -34,8 +34,8 @@ const termsContent = {
         title: '3. Energy Points system',
         content: [
           '• Nature and limits: "Energy Points" are in-service virtual points, not money, e-wallets, or financial instruments; they cannot be redeemed for cash/crypto/equivalents and may not be bought, sold, or transferred off-platform.',
-          '• Earning: Earn primarily via reading targeted messages, referral rewards, and receiving appreciation; rates, caps, and eligibility may change.',
-          '• Use: Spend on targeted messaging, feature unlocks, or non-cash rewards (e.g., coupons, digital entitlements); availability and required points may vary and are not guaranteed.',
+          '• Earning: Energy Points can be obtained by reading targeted messages or through purchase; specific earning rates, purchase prices, caps, and eligibility may be adjusted by the platform at any time. We may provide other ways to earn (e.g., referral rewards, tips) in the future, subject to the platform rules applicable at that time.',
+          '• Use: Energy Points can be used to send targeted messages or to redeem non-cash rewards designated by the platform (e.g., coupons, merchandise). All redemptions are final and non-refundable/non-exchangeable, unless the relevant reward cannot be provided. We may offer the option to use Energy Points to unlock other features in the future; the supplier, availability, specific content, and required points for rewards are subject to change, and the platform does not guarantee the continued availability or stock of any reward.',
           '• Targeted message metering: Message sponsors are charged based on platform-measured effective reads; to deter spam, posting targeted messages consumes Energy Points.',
           '• Purchases and refunds: Purchases of Energy Points are generally non-refundable unless required by law; pricing, minimums, and limits may change for compliance or risk control.',
           '• Anti-abuse: Prohibit scripts, bots, emulators, device-fingerprint manipulation, abnormal foreground/background switching, or any attempt to game reads/rewards; violations may freeze/claw back points, restrict features, or terminate accounts, in addition to other remedies.'
@@ -44,7 +44,7 @@ const termsContent = {
       {
         title: '4. Content policy and community safety',
         content: [
-          '• Your responsibility: Verified users may post public or targeted messages and are solely responsible for their content.',
+          '• Your responsibility: Verified users may post targeted messages and are solely responsible for their content.',
           '• Prohibited content: Illegal, fraudulent, defamatory, obscene, or harassing material; IP/privacy/other-rights violations; misinformation, deceptive statements, doxxing; malware or security threats.',
           '• Prohibited conduct: Data scraping/bulk collection, reverse engineering, unauthorized automation, or any manipulation/circumvention of the Energy Points system.',
           '• Moderation: We may remove content, limit distribution, reduce visibility, add labels, freeze points, or suspend/terminate accounts at our reasonable discretion, and without prior notice in urgent cases.'
@@ -100,15 +100,15 @@ const termsContent = {
   },
   CN: {
     title: '服务条款',
-    lastUpdated: '最后更新日期：2025年8月14日',
-    effectiveDate: '生效日期：2025年8月14日',
+    lastUpdated: '最后更新日期：2025年12月10日',
+    effectiveDate: '生效日期：2025年12月10日',
     provider: '提供方：CampusLink Limited（香港特别行政区）',
     contact: '联系邮箱：campuslink_service@outlook.com',
     sections: [
       {
         title: '1. 接受与主体',
         content: [
-          '• 适用范围：您访问或使用CampusLink移动应用与相关网站/线上功能（"本服务"），即表示您同意受本服务条款（"本条款"）及《隐私政策》约束。',
+          '• 适用范围：您访问或使用CampusLink移动应用与相关网站/线上功能（"本服务"），即表示您同意受本服务条款（"本条款"）及《隐私政策》约束。当前版本的服务主要专注于定向信息、精力值充值与兑换功能。我们可能在未来版本中逐步增加其他社群功能（如公开信息、评论、互动等）',
           '• 年龄与授权：您确认已年满18岁，或已获得父母/法定监护人的同意。若您代表学生组织、大学部门或公司使用本服务，您声明并保证已获得合法授权并使该组织受本条款约束。'
         ]
       },
@@ -125,8 +125,8 @@ const termsContent = {
         title: '3. "精力值"系统（Energy Points）',
         content: [
           '• 性质与限制："精力值"为平台内虚拟积分，非货币、非电子钱包或任何金融工具；不可兑现为现金/加密资产/等价物，且不得在平台外购买、出售或转让。',
-          '• 获取方式：通过阅读定向信息、受邀奖励分成、收到赞赏等获取；具体比率、上限与资格可随时调整。',
-          '• 使用范围：用于发布定向消息、解锁功能或兑换非现金奖励（如优惠券、数字权益）；奖励供应、可用性与所需精力值可能变更，恕不保证持续提供或库存。',
+          '• 获取方式：精力值可通过阅读定向信息或购买获得；具体获取比率、充值价格、上限与资格可由平台随时调整。我们可能在未来提供其他获取方式（如邀请奖励、赞赏等），具体以届时平台规则为准。',
+          '• 使用范围：精力值可用于发布定向信息或兑换平台指定的非现金奖励（如优惠券、纪念品等）。所有兑换行为一经完成，原则上不可撤销或退换，除非相关奖励无法提供。我们可能在未来提供将精力值用于解锁其他功能的选项；奖励的供应方、可用性、具体内容及所需精力值可能随时变更，平台恕不保证任何奖励的持续提供或库存。',
           '• 定向消息计量：信息发布者将依据平台技术计量的有效阅读（按平台规则计时并汇总）承担费用；为抑制滥发，发布定向消息将消耗精力值。',
           '• 购买与退款：如通过支付渠道购买精力值，除法律强制要求外通常不接受退款；平台可基于合规或风控调整价格、最低购买量及限额。',
           '• 反作弊与滥用：禁止以脚本、机器人、模拟器、设备指纹操纵、异常切屏等方式刷取或操纵阅读与奖励；一经发现，我们可冻结/扣回精力值、限制功能或终止账户，并保留追索权。'
@@ -135,7 +135,7 @@ const termsContent = {
       {
         title: '4. 内容政策与社区安全',
         content: [
-          '• 用户责任：已验证用户可发布公开或定向信息，并对其发布内容独立负责。',
+          '• 用户责任：已验证用户可发布定向信息，并对其发布内容独立负责。',
           '• 禁止内容：违法、欺诈、诽谤、淫秽、骚扰；侵犯知识产权/隐私或其他权利；错误/虚假信息、误导性陈述、起底；含恶意代码或安全威胁。',
           '• 禁止行为：数据抓取与批量采集、逆向工程、未经授权的自动化访问、对精力值系统的操纵或规避。',
           '• 审核与处置：我们可依合理判断移除内容、限制传播、降低曝光、标注风险、冻结精力值、暂停或终止账户，并可在紧急情况下不事先通知。'
@@ -191,15 +191,15 @@ const termsContent = {
   },
   HK: {
     title: '服務條款',
-    lastUpdated: '最後更新日期：2025年8月14日',
-    effectiveDate: '生效日期：2025年8月14日',
+    lastUpdated: '最後更新日期：2025年12月10日',
+    effectiveDate: '生效日期：2025年12月10日',
     provider: '提供方：CampusLink Limited（香港特別行政區）',
     contact: '聯絡電郵：campuslink_service@outlook.com',
     sections: [
       {
         title: '1. 接受與主體',
         content: [
-          '• 適用範圍：您使用CampusLink流動應用及相關網站/線上功能（「本服務」），即表示同意受本服務條款（「本條款」）及《私隱政策》約束。',
+          '• 適用範圍：您使用CampusLink流動應用及相關網站/線上功能（「本服務」），即表示同意受本服務條款（「本條款」）及《私隱政策》約束。當前版本之服務主要專注於定向訊息、精力值充值與兌換功能。我們可能於未來版本中逐步增加其他社群功能（如公開資訊、評論、互動等）。',
           '• 年齡與授權：您確認已年滿18歲，或已獲父母/法定監護人同意；如代表學生組織、院系部門或公司使用，您聲明並保證已獲合法授權並使該組織受本條款約束。'
         ]
       },
@@ -216,8 +216,8 @@ const termsContent = {
         title: '3. 「精力值」系統（Energy Points）',
         content: [
           '• 性質與限制：「精力值」為平台內虛擬積分，非貨幣或任何金融工具；不可兌換現金/加密資產/等價物，亦不得於平台外買賣或轉讓。',
-          '• 獲取方式：透過閱讀定向資訊、受邀獎勵分成、收取讚賞等獲取；比率、上限與資格可隨時調整。',
-          '• 使用範圍：用於發布定向訊息、解鎖功能或兌換非現金獎勵（如優惠券、數碼權益）；獎勵供應、可用性與所需精力值或有變更，恕不保證持續提供或庫存。',
+          '• 獲取方式：精力值可透過閱讀定向資訊或購買獲得；具體獲取比率、充值價格、上限與資格可由平台隨時調整。我們可能於未來提供其他獲取方式（如邀請獎勵、讚賞等），具體以屆時平台規則為準。',
+          '• 使用範圍：精力值可用於發布定向訊息或兌換平台指定之非現金獎勵（如優惠券、紀念品等）。所有兌換行為一經完成，原則上不可撤銷或退換，除非相關獎勵無法提供。我們可能於未來提供將精力值用於解鎖其他功能之選項；獎勵之供應方、可用性、具體內容及所需精力值可能隨時變更，平台恕不保證任何獎勵之持續提供或庫存。',
           '• 定向訊息計量：資訊發布者依平台技術計量之有效閱讀承擔費用；為抑制濫發，發布定向訊息將消耗精力值。',
           '• 購買與退款：透過支付渠道購買精力值，除法律強制要求外通常不設退款；平台可基於合規或風控調整價格、最低購買量及限額。',
           '• 反作弊與濫用：禁止以腳本、機械人、模擬器、裝置指紋操縱、異常切屏等方式刷取或操縱閱讀與獎勵；一經發現，可凍結/扣回精力值、限制功能或終止帳戶，並保留追索權。'
@@ -226,7 +226,7 @@ const termsContent = {
       {
         title: '4. 內容政策與社群安全',
         content: [
-          '• 用戶責任：已驗證用戶可發布公開或定向資訊，並對其內容獨立負責。',
+          '• 用戶責任：已驗證用戶可發布定向資訊，並對其內容獨立負責。',
           '• 禁止內容：非法、詐騙、誹謗、猥褻、騷擾；侵害知識產權/私隱或其他權利；錯誤/虛假資訊、誤導性陳述、起底；含惡意代碼或安全威脅。',
           '• 禁止行為：數據抓取與批量蒐集、逆向工程、未授權自動化訪問、對精力值系統之操縱或規避。',
           '• 審核與處置：我們可依合理判斷移除內容、限制傳播、降低曝光、標註風險、凍結精力值、暫停或終止帳戶，緊急情況下可不預先通知。'

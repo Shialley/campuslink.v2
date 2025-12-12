@@ -14,6 +14,9 @@ import {
   View
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+// 导入 API 函数
+import { getImageUrl, getPosts } from '@/services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 新增：SendButton 组件
 function SendButton({ size = 58 }: { size?: number }) {
@@ -74,65 +77,128 @@ export default function Index() {
   const loadPosts = async () => {
     try {
       setLoading(true);
-      // 只加载 targeted posts
-      const mockPosts: Post[] = [
-        {
-          postid: '1',
-          title: 'acct 101 pq sub 求组队',
-          content: '如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如...',
-          cover_name: 'Tomas',
-          createtime: '19:04',
-          tags: 'ACCT101,Study',
-          isRead: false,
-          isTargeted: true,
-          readTime: '30s',
-          energy: 20,
-          image_url: 'https://storage.googleapis.com/tagjs-prod.appspot.com/v1/egC8MCMzoa/yulzzgwh_expires_30_days.png',
-        },
-        {
-          postid: '2',
-          title: '第九屆「任國榮先生生命科學講座',
-          content: '主講：沈祖堯教授\n報名鏈接：https://aaa-bbb.ccc',
-          cover_name: 'cuhk_sls',
-          createtime: '08:00',
-          tags: 'CUHK,Lecture',
-          isRead: true,
-          isTargeted: true,
-          readTime: '45s',
-          energy: 15,
-        },
-        {
-          postid: '3',
-          title: '2024-25社會企業起動計劃：接受報名',
-          content: 'Social Enterprise Startup Scheme 2024-25: Open. The Social Enterprise Startup Scheme...',
-          cover_name: 'cuhk_osa_seds',
-          createtime: '1 days ago',
-          tags: 'CUHK,SocialEnterprise',
-          isRead: false,
-          isTargeted: true,
-          readTime: '2m',
-          energy: 25,
-        },
-        {
-          postid: '4',
-          title: 'Elite Internship Program 2025',
-          content: 'Program Period : Mid June - 31 August 2025',
-          cover_name: 'career_center',
-          createtime: '2025/04/07',
-          tags: 'Career,Internship',
-          isRead: true,
-          isTargeted: true,
-          readTime: '1m',
-          energy: 18,
-        },
-      ];
-      setPosts(mockPosts);
+      
+      // 获取存储的 token
+      const token = await AsyncStorage.getItem('userToken');
+      
+      if (!token) {
+        console.warn('No token found, using mock data');
+        // 如果没有 token，使用 Mock 数据
+        const mockPosts: Post[] = [
+          {
+            postid: '1',
+            title: 'acct 101 pq sub 求组队',
+            content: '如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如...',
+            cover_name: 'Tomas',
+            createtime: '19:04',
+            tags: 'ACCT101,Study',
+            isRead: false,
+            isTargeted: true,
+            readTime: '30s',
+            energy: 20,
+            image_url: 'https://storage.googleapis.com/tagjs-prod.appspot.com/v1/egC8MCMzoa/yulzzgwh_expires_30_days.png',
+          },
+          {
+            postid: '2',
+            title: '第九屆「任國榮先生生命科學講座',
+            content: '主講：沈祖堯教授\n報名鏈接：https://aaa-bbb.ccc',
+            cover_name: 'cuhk_sls',
+            createtime: '08:00',
+            tags: 'CUHK,Lecture',
+            isRead: true,
+            isTargeted: true,
+            readTime: '45s',
+            energy: 15,
+          },
+        ];
+        setPosts(mockPosts);
+        return;
+      }
+
+      // 调用真实 API - 只获取 targeted 类型的帖子
+      console.log('Fetching posts from API...');
+      const response = await getPosts(1, token, 'targeted'); // 使用标签过滤获取定向消息
+      
+      console.log('API Response:', response);
+
+      if (response.success && response.data?.posts) {
+        // 转换 API 数据格式为本地格式
+        const transformedPosts: Post[] = response.data.posts.map((post: any) => ({
+          postid: post.postid,
+          title: post.title,
+          content: post.content,
+          cover_name: post.cover_name || 'Anonymous',
+          createtime: formatDateTime(post.createtime),
+          tags: post.tags || '',
+          isRead: false, // 默认未读
+          isTargeted: true, // 定向消息
+          readTime: calculateReadTime(post.content),
+          energy: calculateEnergy(post.content),
+          image_url: post.image_url ? getImageUrl(post.image_url, token) : undefined,
+        }));
+
+        console.log('Transformed posts:', transformedPosts);
+        setPosts(transformedPosts);
+      } else {
+        console.warn('API returned no posts, using fallback');
+        Alert.alert('提示', response.message || '暂无定向消息');
+        setPosts([]);
+      }
     } catch (error) {
       console.error('Failed to load posts:', error);
-      Alert.alert('Error', 'Failed to load posts');
+      Alert.alert('错误', '加载帖子失败，请稍后重试');
+      setPosts([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  // 格式化时间
+  const formatDateTime = (timestamp: string): string => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      // 今天 - 显示时间
+      return date.toLocaleTimeString('zh-CN', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      });
+    } else if (diffDays === 1) {
+      return '1 day ago';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      // 超过一周 - 显示日期
+      return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    }
+  };
+
+  // 计算预计阅读时间
+  const calculateReadTime = (content: string): string => {
+    const wordCount = content.length;
+    const readingSpeed = 200; // 每分钟阅读字数
+    const minutes = Math.ceil(wordCount / readingSpeed);
+    
+    if (minutes < 1) {
+      return `${Math.ceil((wordCount / readingSpeed) * 60)}s`;
+    } else {
+      return `${minutes}m`;
+    }
+  };
+
+  // 计算能量值
+  const calculateEnergy = (content: string): number => {
+    const wordCount = content.length;
+    // 每100字给10能量
+    return Math.max(10, Math.floor(wordCount / 100) * 10);
   };
 
   const handleRefresh = async () => {

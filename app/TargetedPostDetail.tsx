@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   Dimensions,
   Easing,
@@ -19,7 +20,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import ActionModal from '../components/ActionModal';
 import CommonHeader from '../components/CommonHeader';
-import { getPost } from '../services/api';
+import { addEnergyPoint, getPost, savePost } from '../services/api';
 import { getImageDisplayUrl } from '../utils/imageUtils';
 import { stripHashtags } from '../utils/tags';
 
@@ -182,6 +183,7 @@ export default function TargetedPostDetail() {
   const [loading, setLoading] = useState(true);
   const [energy, setEnergy] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
+  const [energyAdded, setEnergyAdded] = useState(false); // 新增：记录是否已添加能量
   
   // 添加弹窗状态
   const [modalVisible, setModalVisible] = useState(false);
@@ -193,7 +195,24 @@ export default function TargetedPostDetail() {
 
   useEffect(() => {
     loadPostDetails();
+    loadUserEnergy(); // 新增：加载用户能量
   }, [postId]);
+
+  // 新增：加载用户当前能量值
+  const loadUserEnergy = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+
+      // 这里可以调用 getEnergyPoint API 获取当前能量
+      // const result = await getEnergyPoint(token);
+      // if (result.success) {
+      //   setEnergy(result.data.energy_point || 0);
+      // }
+    } catch (error) {
+      console.error('Failed to load user energy:', error);
+    }
+  };
 
   const formatPostData = useCallback((apiData: any, postId: string): TargetedPostDetail => {
     const post = apiData.post || apiData;
@@ -280,58 +299,119 @@ export default function TargetedPostDetail() {
       
       if (token && postId) {
         try {
+          console.log('📡 Loading post details for:', postId);
           const result = await getPost(postId as string, token);
+          
+          console.log('✅ API Response:', result);
           
           if (result.success && result.data) {
             const formattedPost = formatPostData(result.data, postId as string);
             setPost(formattedPost);
-            setEnergy(formattedPost.energy);
+            console.log('✅ Post loaded successfully');
           } else {
+            console.warn('⚠️ API failed, using mock data');
             const mockPost = getMockPostData(postId as string);
             setPost(mockPost);
-            setEnergy(mockPost.energy);
           }
         } catch (apiError) {
+          console.error('❌ API error:', apiError);
           const mockPost = getMockPostData(postId as string);
           setPost(mockPost);
-          setEnergy(mockPost.energy);
         }
       } else {
-        const mockPost = getMockPostData(postId as string);
+        console.warn('⚠️ No token or postId, using mock data');
+        const mockPost = getMockPostData((postId as string) || '1');
         setPost(mockPost);
-        setEnergy(mockPost.energy);
       }
     } catch (error) {
-      const mockPost = getMockPostData(postId as string);
+      console.error('❌ Failed to load post:', error);
+      const mockPost = getMockPostData((postId as string) || '1');
       setPost(mockPost);
-      setEnergy(mockPost.energy);
     } finally {
       setLoading(false);
     }
   }, [postId, formatPostData, getMockPostData]);
 
-  const handleTimerFinish = () => {
-    if (!post) return;
+  // ✅ 更新：倒计时完成后调用 API 添加能量
+  const handleTimerFinish = async () => {
+    if (!post || energyAdded) {
+      console.log('⏭️ Energy already added or no post data');
+      return;
+    }
     
-    floatAnim.setValue(0);
-    fadeAnim.setValue(1);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      
+      if (token && post.id) {
+        console.log('📡 Adding energy point:', {
+          postId: post.id,
+          score: post.energy
+        });
+        
+        const result = await addEnergyPoint(post.id, post.energy, token);
+        
+        console.log('✅ Add energy point result:', result);
+        
+        if (result.success) {
+          console.log('✅ Energy added successfully');
+          setEnergyAdded(true); // 标记已添加
+          
+          // 播放动画
+          floatAnim.setValue(0);
+          fadeAnim.setValue(1);
 
-    Animated.parallel([
-      Animated.timing(floatAnim, {
-        toValue: -30,
-        duration: 800,
-        useNativeDriver: true,
-        easing: Easing.out(Easing.ease)
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 800,
-        useNativeDriver: true,
-        delay: 200,
-      })
-    ]).start(() => {
-      setEnergy(prev => prev + post.energy);
-    });
+          Animated.parallel([
+            Animated.timing(floatAnim, {
+              toValue: -30,
+              duration: 800,
+              useNativeDriver: true,
+              easing: Easing.out(Easing.ease)
+            }),
+            Animated.timing(fadeAnim, {
+              toValue: 0,
+              duration: 800,
+              useNativeDriver: true,
+              delay: 200,
+            })
+          ]).start(() => {
+            // 更新本地能量显示
+            if (result.data?.energy_point !== undefined) {
+              setEnergy(result.data.energy_point);
+            } else {
+              setEnergy(prev => prev + post.energy);
+            }
+          });
+        } else {
+          console.warn('⚠️ Failed to add energy:', result.message);
+          Alert.alert('提示', '添加能量失败，请稍后重试');
+        }
+      } else {
+        console.warn('⚠️ No token or post ID, skipping energy add');
+        // 没有 token，仅播放动画
+        floatAnim.setValue(0);
+        fadeAnim.setValue(1);
+
+        Animated.parallel([
+          Animated.timing(floatAnim, {
+            toValue: -30,
+            duration: 800,
+            useNativeDriver: true,
+            easing: Easing.out(Easing.ease)
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 800,
+            useNativeDriver: true,
+            delay: 200,
+          })
+        ]).start(() => {
+          setEnergy(prev => prev + post.energy);
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error adding energy:', error);
+      Alert.alert('错误', '添加能量时发生错误');
+    }
   };
 
   const handleBack = useCallback(() => {
@@ -353,20 +433,57 @@ export default function TargetedPostDetail() {
     }, 1500);
   };
 
-  const handleInterested = () => {
+  // ✅ 更新：收藏功能接入 API
+  const handleInterested = async () => {
     console.log('Interested clicked, isSaved:', isSaved);
+    
     if (!isSaved) {
-      setIsSaved(true);
-      setModalType('bookmark');
-      setModalVisible(true);
-      console.log('Modal should be visible now');
-      
-      // 1.5秒后自动关闭弹窗
-      setTimeout(() => {
-        setModalVisible(false);
-      }, 1500);
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        
+        if (token && post?.id) {
+          console.log('📡 Saving post:', post.id);
+          
+          const result = await savePost(post.id, token);
+          
+          console.log('✅ Save post result:', result);
+          
+          if (result.success) {
+            console.log('✅ Post saved successfully');
+            setIsSaved(true);
+            setModalType('bookmark');
+            setModalVisible(true);
+            
+            // 1.5秒后自动关闭弹窗
+            setTimeout(() => {
+              setModalVisible(false);
+            }, 1500);
+          } else if (result.message === 'already_saved') {
+            console.log('ℹ️ Post already saved');
+            setIsSaved(true);
+            Alert.alert('提示', '该帖子已经在收藏列表中');
+          } else {
+            console.warn('⚠️ Failed to save post:', result.message);
+            Alert.alert('提示', result.message || '收藏失败，请稍后重试');
+          }
+        } else {
+          console.warn('⚠️ No token or post ID, showing modal only');
+          // 没有 token，仅显示弹窗
+          setIsSaved(true);
+          setModalType('bookmark');
+          setModalVisible(true);
+          
+          setTimeout(() => {
+            setModalVisible(false);
+          }, 1500);
+        }
+      } catch (error) {
+        console.error('❌ Error saving post:', error);
+        Alert.alert('错误', '收藏时发生错误');
+      }
     } else {
-      // 如果已经收藏，直接取消收藏
+      // 如果已经收藏，直接取消收藏（本地状态）
+      console.log('ℹ️ Unsaving post (local only)');
       setIsSaved(false);
     }
   };
@@ -403,7 +520,7 @@ export default function TargetedPostDetail() {
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header with Energy - 使用 CommonHeader */}
+          {/* Header with Energy */}
           <View style={styles.titleBar}>
             <TouchableOpacity onPress={handleBack}>
               <Text style={styles.backButton}>←</Text>

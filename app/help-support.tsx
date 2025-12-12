@@ -246,15 +246,12 @@ export default function HelpSupportScreen() {
 
   return (
     <SafeAreaProvider>
-      {/* 隐藏原生 header */}
       <Stack.Screen 
         options={{
           headerShown: false,
         }} 
       />
-      {/* 修改：使用 edges={['top']} 与 followers 保持一致 */}
       <SafeAreaView style={styles.container} edges={['top']}>
-        {/* 使用 CommonHeader */}
         <CommonHeader 
           onBack={() => router.back()}
           title={content.title}
@@ -291,7 +288,6 @@ export default function HelpSupportScreen() {
           </View>
         </ScrollView>
         
-        {/* Language toggle button */}
         <TouchableOpacity style={styles.languageButton} onPress={toggleLanguage}>
           <Text style={styles.languageButtonText}>
             {getLanguageButtonText()}
@@ -305,7 +301,7 @@ export default function HelpSupportScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
@@ -338,6 +334,8 @@ const styles = StyleSheet.create({
     },
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   helpItemContent: {
     flex: 1,

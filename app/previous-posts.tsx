@@ -4,6 +4,7 @@ import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   RefreshControl,
   ScrollView,
@@ -37,9 +38,14 @@ interface Post {
 
 export default function PreviousPostsScreen() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
+
+  // 页面加载时获取数据
+  useEffect(() => {
+    loadPosts();
+  }, []);
 
   // 加载帖子数据
   const loadPosts = async (isRefresh: boolean = false) => {
@@ -52,125 +58,75 @@ export default function PreviousPostsScreen() {
 
       const token = await AsyncStorage.getItem('userToken');
       
-      if (token) {
-        try {
-          console.log('Loading user posts from API...');
-          const userPostsResult = await getUserPosts(1, token);
+      if (!token) {
+        console.warn('⚠️ No token found, redirecting to login');
+        router.push('/login');
+        return;
+      }
+
+      console.log('📡 Loading user posts from API...');
+      const result = await getUserPosts(1, token);
+      
+      console.log('✅ getUserPosts result:', result);
+      
+      if (result.success && result.data?.posts) {
+        const apiPosts = result.data.posts;
+        console.log('✅ Found', apiPosts.length, 'posts');
+        
+        // 转换 API 数据格式
+        const postsData: Post[] = apiPosts.map((post: any) => {
+          const content = post.content || '';
+          const energy = calculateEnergyCount(content);
+          const viewCount = post.view_count || post.viewCount || Math.floor(Math.random() * 100);
+          const targetViewCount = post.target_view_count || post.targetViewCount || 100;
+          const energyUsed = Math.floor((viewCount / targetViewCount) * energy);
           
-          console.log('getUserPosts result:', userPostsResult);
-          
-          let postsList: any[] = [];
-          
-          if (Array.isArray(userPostsResult)) {
-            postsList = userPostsResult;
-          } else if (userPostsResult && typeof userPostsResult === 'object') {
-            if (userPostsResult.success) {
-              const raw = userPostsResult.data;
-              postsList = Array.isArray(raw) ? raw : (raw?.posts ?? raw?.data ?? []);
-            }
-          }
-          
-          console.log('Extracted posts list:', postsList.length, 'posts');
-          
-          if (postsList.length > 0) {
-            const postsData: Post[] = postsList.map((post: any) => {
-              const energy = calculateEnergyCount(post.content || '');
-              const viewCount = post.viewCount || Math.floor(Math.random() * 100);
-              const targetViewCount = post.targetViewCount || 100;
-              const energyUsed = Math.floor((viewCount / targetViewCount) * energy);
-              
-              return {
-                id: post.postid || post.id,
-                title: extractTitle(post.content) || 'Untitled',
-                content: post.content || '',
-                time: formatPostTime(post.createtime || new Date().toISOString()),
-                author: post.cover_name || 'Anonymous',
-                readTime: calculateReadTime(post.content || ''),
-                energy: energy,
-                energyUsed: energyUsed,
-                energyTotal: energy,
-                isFinished: viewCount >= targetViewCount,
-                viewCount: viewCount,
-                targetViewCount: targetViewCount,
-                image_url: post.image_url,
-              };
-            });
-            
-            setPosts(postsData);
-          } else {
-            console.log('No posts found, using mock data');
-            setPosts(getMockPosts());
-          }
-          
-        } catch (apiError) {
-          console.log('Posts API error, using mock data:', apiError);
-          setPosts(getMockPosts());
-        }
+          return {
+            id: post.postid || post.id,
+            title: extractTitle(content, post.title),
+            content: content,
+            time: formatPostTime(post.createtime || new Date().toISOString()),
+            author: post.cover_name || 'You',
+            readTime: calculateReadTime(content),
+            energy: energy,
+            energyUsed: energyUsed,
+            energyTotal: energy,
+            isFinished: viewCount >= targetViewCount,
+            viewCount: viewCount,
+            targetViewCount: targetViewCount,
+            image_url: post.image_url,
+          };
+        });
+        
+        setPosts(postsData);
+        console.log('✅ User posts loaded successfully:', postsData.length);
       } else {
-        console.log('No token, using mock data');
-        setPosts(getMockPosts());
+        console.warn('⚠️ No posts found or API failed:', result.message);
+        setPosts([]);
       }
     } catch (error) {
-      console.error('Error loading posts:', error);
-      setPosts(getMockPosts());
+      console.error('❌ Error loading posts:', error);
+      Alert.alert('错误', '加载帖子失败');
+      setPosts([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  // 获取模拟数据
-  const getMockPosts = (): Post[] => [
-    {
-      id: '1',
-      title: 'acct 101 pq sub 求组队',
-      content: '如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如题如...',
-      time: '19:04',
-      author: 'You',
-      readTime: '30s',
-      energy: 800,
-      energyUsed: 420,
-      energyTotal: 800,
-      isFinished: false,
-      viewCount: 52,
-      targetViewCount: 100,
-      image_url: 'https://storage.googleapis.com/tagjs-prod.appspot.com/v1/egC8MCMzoa/yulzzgwh_expires_30_days.png',
-    },
-    {
-      id: '2',
-      title: '第九屆「任國榮先生生命科學講座',
-      content: '主講：沈祖堯教授\n報名鏈接：https://aaa-bbb.ccc',
-      time: '08:00',
-      author: 'You',
-      readTime: '45s',
-      energy: 1100,
-      energyUsed: 1100,
-      energyTotal: 1100,
-      isFinished: true,
-      viewCount: 100,
-      targetViewCount: 100,
-    },
-    {
-      id: '3',
-      title: 'MATH 201 Final Exam Study Group',
-      content: 'Looking for serious study partners for MATH 201 final exam. We will meet every weekend until the exam...',
-      time: '18:30',
-      author: 'You',
-      readTime: '45s',
-      energy: 600,
-      energyUsed: 480,
-      energyTotal: 600,
-      isFinished: false,
-      viewCount: 80,
-      targetViewCount: 100,
-    },
-  ];
-
   // 从帖子内容中提取标题
-  const extractTitle = (content: string): string => {
-    if (!content) return '';
+  const extractTitle = (content: string, apiTitle?: string): string => {
+    // 如果 API 返回了标题，优先使用
+    if (apiTitle && apiTitle.trim()) {
+      return apiTitle.length > 40 ? apiTitle.substring(0, 40) + '...' : apiTitle;
+    }
     
-    const firstLine = content.split('\n')[0]
+    // 否则从内容中提取
+    if (!content) return 'Untitled';
+    
+    // 移除 hashtags 并获取第一行
+    const firstLine = content
+      .split('\n')[0]
       .replace(/#\S+/g, '')
       .trim();
       
@@ -182,34 +138,52 @@ export default function PreviousPostsScreen() {
 
   // 格式化帖子时间
   const formatPostTime = (timestamp: string): string => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) {
-      return 'Just now';
-    } else if (diffInHours < 24) {
-      return `${diffInHours}h ago`;
-    } else {
-      const diffInDays = Math.floor(diffInHours / 24);
-      if (diffInDays === 1) {
-        return '1 day ago';
-      } else if (diffInDays < 7) {
-        return `${diffInDays} days ago`;
+    try {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffInHours = Math.floor(diffMs / (1000 * 60 * 60));
+      
+      if (diffInHours < 1) {
+        const diffInMinutes = Math.floor(diffMs / (1000 * 60));
+        if (diffInMinutes < 1) return 'Just now';
+        return `${diffInMinutes}min ago`;
+      } else if (diffInHours < 24) {
+        return `${diffInHours}h ago`;
       } else {
-        return date.toLocaleDateString();
+        const diffInDays = Math.floor(diffInHours / 24);
+        if (diffInDays === 1) {
+          return '1 day ago';
+        } else if (diffInDays < 7) {
+          return `${diffInDays} days ago`;
+        } else if (diffInDays < 30) {
+          const weeks = Math.floor(diffInDays / 7);
+          return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+        } else {
+          return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric',
+            year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+          });
+        }
       }
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return timestamp;
     }
   };
 
   // 计算阅读时间
   const calculateReadTime = (content: string): string => {
+    if (!content) return '30s';
+    
     const wordsPerMinute = 200;
     const words = content.split(/\s+/).length;
     const minutes = Math.ceil(words / wordsPerMinute);
     
     if (minutes < 1) {
-      return '30s';
+      const seconds = Math.ceil((words / wordsPerMinute) * 60);
+      return `${Math.max(30, seconds)}s`;
     } else if (minutes === 1) {
       return '1 min';
     } else {
@@ -219,9 +193,12 @@ export default function PreviousPostsScreen() {
 
   // 计算能量值
   const calculateEnergyCount = (content: string): number => {
+    if (!content) return 100;
+    
     const baseEnergy = 100;
     const contentLength = content.length;
-    return baseEnergy + Math.floor(contentLength / 10) * 50;
+    // 每50个字符增加50能量
+    return baseEnergy + Math.floor(contentLength / 50) * 50;
   };
 
   // 格式化能量数字
@@ -252,10 +229,29 @@ export default function PreviousPostsScreen() {
     });
   };
 
-  // 页面加载时获取数据
-  useEffect(() => {
-    loadPosts();
-  }, []);
+  // 渲染加载状态
+  if (loading) {
+    return (
+      <SafeAreaProvider>
+        <Stack.Screen options={{ headerShown: false }} />
+        <SafeAreaView style={styles.container} edges={['top']}>
+          {/* Header */}
+          <View style={styles.headerContainer}>
+            <CommonHeader 
+              onBack={handleBack}
+              title="发送记录"
+              showMore={false}
+            />
+          </View>
+
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FFC107" />
+            <Text style={styles.loadingText}>Loading posts...</Text>
+          </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
@@ -285,11 +281,7 @@ export default function PreviousPostsScreen() {
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
         >
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#FFC107" />
-            </View>
-          ) : posts.length > 0 ? (
+          {posts.length > 0 ? (
             <>
               {posts.map((post) => (
                 <TouchableOpacity 
@@ -354,7 +346,7 @@ export default function PreviousPostsScreen() {
                           colors={['#FF9317', '#FFCC00']}
                           style={[
                             styles.progressBarFill,
-                            { width: `${(post.energyUsed / post.energyTotal) * 100}%` }
+                            { width: `${Math.min(100, (post.energyUsed / post.energyTotal) * 100)}%` }
                           ]}
                         />
                       </View>
@@ -382,6 +374,12 @@ export default function PreviousPostsScreen() {
               />
               <Text style={styles.emptyTitle}>No Posts Yet</Text>
               <Text style={styles.emptyText}>Start posting to see them here</Text>
+              <TouchableOpacity 
+                style={styles.createButton}
+                onPress={() => router.push('/post')}
+              >
+                <Text style={styles.createButtonText}>Create Post</Text>
+              </TouchableOpacity>
             </View>
           )}
         </ScrollView>
@@ -416,6 +414,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 100,
+  },
+
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#64748B',
   },
 
   // 卡片样式
@@ -579,5 +583,19 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     textAlign: 'center',
     lineHeight: 24,
+    marginBottom: 24,
+  },
+
+  createButton: {
+    backgroundColor: '#FFC107',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+
+  createButtonText: {
+    color: '#1F2937',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
